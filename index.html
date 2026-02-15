@@ -224,11 +224,12 @@
 <script src="https://apis.google.com/js/api.js"></script>
 
 <script>
-  // ====== YOUR KEYS ======
+  // ====== KEYS ======
   const API_URL = "https://script.google.com/macros/s/AKfycbz0Uv1MzYQqukwHtG0fFJ6Setv0O7G_dDF-JY4yYfHSgLMU481pOr_XpCeQiDA0zpC6cA/exec";
   const GOOGLE_CLIENT_ID = "86449545414-but5pc5o9ocri2eurd016aaolfpktbh9.apps.googleusercontent.com";
   const GOOGLE_API_KEY   = "AIzaSyAyO1zaXxk1YZm8ej5zvxKwkdrR1Y-Qld8";
 
+  // ===== Provinces =====
   const PROVINCES_TH = [
     "กรุงเทพมหานคร","กระบี่","กาญจนบุรี","กาฬสินธุ์","กำแพงเพชร","ขอนแก่น","จันทบุรี","ฉะเชิงเทรา",
     "ชลบุรี","ชัยนาท","ชัยภูมิ","ชุมพร","เชียงราย","เชียงใหม่","ตรัง","ตราด","ตาก","นครนายก",
@@ -249,6 +250,7 @@
   let allListings = [];
   let approvedListings = [];
 
+  // ===== Helpers =====
   function fillProvinces(){
     const sel = document.getElementById('province');
     sel.innerHTML = `<option value="">เลือกจังหวัด</option>`;
@@ -261,13 +263,18 @@
   }
 
   async function loadLocalListings(){
-    const res = await fetch('listings.json');
-    const data = await res.json();
-    allListings = data || [];
+    try{
+      const res = await fetch('listings.json', { cache: "no-store" });
+      if(!res.ok){ allListings = []; return; }
+      const data = await res.json();
+      allListings = data || [];
+    }catch(e){
+      allListings = [];
+    }
   }
 
   async function loadApprovedFromSheet(){
-    const res = await fetch(`${API_URL}?status=APPROVED`);
+    const res = await fetch(`${API_URL}?status=APPROVED`, { cache: "no-store" });
     const data = await res.json();
     if(!data.ok) throw new Error(data.error || "โหลดข้อมูลไม่สำเร็จ");
     return data.listings || [];
@@ -285,146 +292,113 @@
     });
   }
 
-  function parseImages(x){
-  try{
-    const arr = Array.isArray(x) ? x : (typeof x === "string" ? JSON.parse(x || "[]") : []);
-    return (arr || []).map(normalizeDriveImageUrl).filter(Boolean);
-  }catch(e){
-    return [];
+  function normalizeDriveImageUrl(u){
+    u = (u || "").trim();
+    if(!u) return "";
+    let m = u.match(/drive\.google\.com\/uc\?export=view&id=([a-zA-Z0-9_-]+)/);
+    if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w3000`;
+    m = u.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w3000`;
+    m = u.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+    if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w3000`;
+    return u;
   }
-}
-function normalizeDriveImageUrl(u){
-  u = (u || "").trim();
-  if(!u) return "";
 
-  // ถ้าเป็น uc?export=view&id=...
-  let m = u.match(/drive\.google\.com\/uc\?export=view&id=([a-zA-Z0-9_-]+)/);
-  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w3000`;
+  function parseImages(x){
+    try{
+      const arr = Array.isArray(x) ? x : (typeof x === "string" ? JSON.parse(x || "[]") : []);
+      return (arr || []).map(normalizeDriveImageUrl).filter(Boolean);
+    }catch(e){
+      return [];
+    }
+  }
 
-  // ถ้าเป็น file/d/ID/view
-  m = u.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w3000`;
-
-  // ถ้าเป็น open?id=ID
-  m = u.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
-  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w3000`;
-
-  return u;
-}
-
+  // ===== Render =====
+  function openGallery(images, idx){
+    document.getElementById("galleryImg").src = images[idx] || "";
+    document.getElementById("galleryModal").style.display = "flex";
+  }
+  document.getElementById("galleryClose").onclick = ()=> document.getElementById("galleryModal").style.display="none";
 
   function render(list){
-  markers.clearLayers();
-  const container = document.getElementById('listings');
-  container.innerHTML = '';
+    markers.clearLayers();
+    const container = document.getElementById('listings');
+    container.innerHTML = '';
 
-  if(!list || list.length === 0){
-    container.innerHTML = '<i class="small">ไม่มีรายการ</i>';
-    return;
-  }
-
-  list.forEach(item=>{
-    const contact = item.contact || item.phone || '';
-    const priceText = item.price ? '฿' + Number(item.price).toLocaleString() : '-';
-    const images = parseImages(item.images);
-
-    // ===== MAP MARKER =====
-    if(item.lat && item.lng){
-      const m = L.marker([Number(item.lat), Number(item.lng)]).addTo(markers);
-      m.bindPopup(`<b>${item.title || '-'}</b><br>${item.province || '-'} • ${item.type || '-'}<br>ราคา: ${priceText}`);
+    if(!list || list.length === 0){
+      container.innerHTML = '<i class="small">ไม่มีรายการ</i>';
+      return;
     }
 
-    // ===== CARD =====
-    const card = document.createElement('div');
-    card.className = 'card-item';
+    list.forEach(item=>{
+      const contact = item.contact || item.phone || '';
+      const priceText = item.price ? '฿' + Number(item.price).toLocaleString() : '-';
+      const images = parseImages(item.images);
 
-    // thumbs html
-    const thumbsHtml = images.slice(0,8).map((u,idx)=>`
-      <img class="thumb" src="${u}" referrerpolicy="no-referrer"
-           onerror="this.style.display='none'"
-           alt="img" data-idx="${idx}" />
-    `).join("");
+      // map
+      if(item.lat && item.lng){
+        const m = L.marker([Number(item.lat), Number(item.lng)]).addTo(markers);
+        m.bindPopup(`<b>${item.title || '-'}</b><br>${item.province || '-'} • ${item.type || '-'}<br>ราคา: ${priceText}`);
+      }
 
-    card.innerHTML = `
-      <b>${item.title || '-'}</b>
-      <div class="meta">${item.province || '-'} • ${item.type || '-'} • ราคา: ${priceText}</div>
+      const card = document.createElement('div');
+      card.className = 'card-item';
 
-      ${item.detail ? `<div style="margin-top:8px;">${item.detail}</div>` : ``}
+      const thumbsHtml = images.slice(0,8).map((u,idx)=>`
+        <img class="thumb" src="${u}" referrerpolicy="no-referrer"
+             onerror="this.style.display='none'"
+             alt="img" data-idx="${idx}" />
+      `).join("");
 
-      ${images.length ? `<div class="thumbs">${thumbsHtml}</div>` : ``}
+      card.innerHTML = `
+        <b>${item.title || '-'}</b>
+        <div class="meta">${item.province || '-'} • ${item.type || '-'} • ราคา: ${priceText}</div>
+        ${item.detail ? `<div style="margin-top:8px;">${item.detail}</div>` : ``}
+        ${images.length ? `<div class="thumbs">${thumbsHtml}</div>` : ``}
 
-      <div class="actions">
-        ${contact
-          ? `<span class="contact-badge">ติดต่อ: <b>${contact}</b></span>`
-          : `<span class="small">ยังไม่มีช่องทางติดต่อ</span>`
-        }
+        <div class="actions">
+          ${contact ? `<span class="contact-badge">ติดต่อ: <b>${contact}</b></span>` : `<span class="small">ยังไม่มีช่องทางติดต่อ</span>`}
+          <button class="btn btn-ghost btn-edit" type="button">แก้ไข</button>
+          <button class="btn btn-ghost btn-del" type="button">ลบ</button>
+        </div>
+      `;
 
-        <button class="btn btn-ghost btn-edit" type="button">แก้ไข</button>
-        <button class="btn btn-ghost btn-del" type="button">ลบ</button>
-      </div>
-    `;
+      container.appendChild(card);
 
-    // ใส่การ์ดลงหน้าเว็บก่อน
-    container.appendChild(card);
-
-    // ===== THUMB CLICK -> OPEN GALLERY =====
-    if(images.length){
-      card.querySelectorAll(".thumb").forEach(img=>{
-        img.addEventListener("click", ()=>{
-          const idx = Number(img.getAttribute("data-idx") || "0");
-          openGallery(images, idx);
+      // thumbs click
+      if(images.length){
+        card.querySelectorAll(".thumb").forEach(img=>{
+          img.addEventListener("click", ()=>{
+            const idx = Number(img.getAttribute("data-idx") || "0");
+            openGallery(images, idx);
+          });
         });
-      });
-    }
+      }
 
-    // ===== EDIT BUTTON =====
-    card.querySelector(".btn-edit").addEventListener("click", ()=>{
-      openEdit(item); // ใช้ฟังก์ชัน openEdit เดิมของคุณ
-    });
+      // edit
+      card.querySelector(".btn-edit").addEventListener("click", ()=> openEdit(item));
 
-    // ===== DELETE BUTTON =====
-    card.querySelector(".btn-del").addEventListener("click", async ()=>{
-      if(!confirm("ต้องการลบประกาศนี้ใช่ไหม?")) return;
+      // delete
+      card.querySelector(".btn-del").addEventListener("click", async ()=>{
+        if(!confirm("ต้องการลบประกาศนี้ใช่ไหม?")) return;
+        const confirmContact = prompt("พิมพ์เบอร์/ไลน์เพื่อยืนยัน (ต้องตรงกับที่ลงประกาศไว้)");
+        if(!confirmContact) return;
 
-      const confirmContact = prompt("พิมพ์เบอร์/ไลน์เพื่อยืนยัน (ต้องตรงกับที่ลงประกาศไว้)");
-      if(!confirmContact) return;
+        const msg = document.getElementById("formMsg");
+        if(msg) msg.textContent = "กำลังลบ...";
 
-      const msg = document.getElementById("formMsg");
-      if(msg) msg.textContent = "กำลังลบ...";
-
-      try{
-        const r = await submitToSheet({
-          mode:"delete",
-          id: item.id,
-          confirm_contact: confirmContact.trim()
-        });
+        const r = await submitToSheet({ mode:"delete", id: item.id, confirm_contact: confirmContact.trim() });
 
         if(r.ok){
           if(msg) msg.textContent = "ลบแล้ว ✅";
-
-          // โหลดรายการใหม่จากชีต
-          try{
-            approvedListings = await loadApprovedFromSheet();
-          }catch(e){
-            approvedListings = [];
-          }
-
-          const merged = [...approvedListings, ...allListings];
-          populateProvinceOptionsFrom(merged);
-          render(merged);
-
+          await refreshListings();
         }else{
           if(msg) msg.textContent = "ลบไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ");
           alert("ลบไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ"));
         }
-      }catch(err){
-        if(msg) msg.textContent = "ลบไม่สำเร็จ: " + err.message;
-        alert("ลบไม่สำเร็จ: " + err.message);
-      }
+      });
     });
-  });
-}
-
+  }
 
   // ===== Filters =====
   function applyFilters(){
@@ -466,7 +440,7 @@ function normalizeDriveImageUrl(u){
     try{ return JSON.parse(document.getElementById("images").value || "[]"); }catch(e){ return []; }
   }
 
-  // ===== Link paste modal =====
+  // image modal
   const imgModal = document.getElementById("imgModal");
   document.getElementById("imgBox").addEventListener("click", ()=>{
     document.getElementById("imgUrls").value = getImages().join("\n");
@@ -484,29 +458,16 @@ function normalizeDriveImageUrl(u){
     imgModal.style.display="none";
   };
 
-  // ===== Gallery modal =====
-  const galleryModal = document.getElementById("galleryModal");
-  function openGallery(images, idx){
-    document.getElementById("galleryImg").src = images[idx] || "";
-    galleryModal.style.display = "flex";
+  // ===== Submit to Sheet =====
+  async function submitToSheet(payload){
+    const body = new URLSearchParams(payload);
+    const res = await fetch(API_URL, { method:"POST", body });
+    const text = await res.text();
+    try{ return JSON.parse(text); }
+    catch(e){ return { ok:false, error: "API ตอบกลับไม่ใช่ JSON: " + text.slice(0,200) }; }
   }
-  document.getElementById("galleryClose").onclick = ()=> galleryModal.style.display="none";
 
-  // ===== Submit to Sheet (form-urlencoded to avoid Failed to fetch) =====
-  async function (payload){
-  const body = new URLSearchParams(payload);
-  const res = await fetch(API_URL, { method:"POST", body });
-
-  const text = await res.text();
-  try{
-    return JSON.parse(text);
-  }catch(e){
-    return { ok:false, error: "API ตอบกลับไม่ใช่ JSON: " + text.slice(0,200) };
-  }
-}
-
-
-  // ===== Edit flow =====
+  // ===== Edit =====
   function openEdit(item){
     document.getElementById("fullName").value = item.full_name || "";
     document.getElementById("contact").value = item.contact || item.phone || "";
@@ -520,11 +481,11 @@ function normalizeDriveImageUrl(u){
     setImages(parseImages(item.images));
 
     window.__EDIT_MODE__ = { original_id: item.id };
-    document.getElementById("formMsg").textContent = "โหมดแก้ไข: จะส่งเป็นคำขอแก้ไขและรออนุมัติ (PENDING_EDIT)";
+    document.getElementById("formMsg").textContent = "โหมดแก้ไข: จะส่งเป็นคำขอแก้ไขและรออนุมัติ";
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // ===== Form submit =====
+  // submit form
   document.getElementById("sellForm").addEventListener("submit", async (e)=>{
     e.preventDefault();
     const msg = document.getElementById("formMsg");
@@ -548,19 +509,15 @@ function normalizeDriveImageUrl(u){
       payload.original_id = window.__EDIT_MODE__.original_id;
     }
 
-    try{
-      const r = await submitToSheet(payload);
-      if(r.ok){
-        msg.textContent = window.__EDIT_MODE__ ? "ส่งคำขอแก้ไขแล้ว ✅ รออนุมัติ (PENDING_EDIT)" : "ส่งประกาศแล้ว ✅ รออนุมัติ (PENDING)";
-        e.target.reset();
-        fillProvinces();
-        setImages([]);
-        window.__EDIT_MODE__ = null;
-      }else{
-        msg.textContent = "ส่งไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ");
-      }
-    }catch(err){
-      msg.textContent = "ส่งไม่สำเร็จ: " + err.message;
+    const r = await submitToSheet(payload);
+    if(r.ok){
+      msg.textContent = window.__EDIT_MODE__ ? "ส่งคำขอแก้ไขแล้ว ✅" : "ส่งประกาศแล้ว ✅ รออนุมัติ";
+      e.target.reset();
+      fillProvinces();
+      setImages([]);
+      window.__EDIT_MODE__ = null;
+    }else{
+      msg.textContent = "ส่งไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ");
     }
   });
 
@@ -611,22 +568,21 @@ function normalizeDriveImageUrl(u){
     gisTokenClient.requestAccessToken({ prompt:"consent" });
   });
 
+  // ===== Refresh listings =====
+  async function refreshListings(){
+    try{ approvedListings = await loadApprovedFromSheet(); }catch(e){ approvedListings = []; }
+    const merged = [...approvedListings, ...allListings];
+    populateProvinceOptionsFrom(merged);
+    render(merged);
+  }
+
   // ===== Init =====
   (async function init(){
     fillProvinces();
     setImages([]);
 
     await loadLocalListings();
-
-    try{
-      approvedListings = await loadApprovedFromSheet();
-    }catch(e){
-      approvedListings = [];
-    }
-
-    const merged = [...approvedListings, ...allListings];
-    populateProvinceOptionsFrom(merged);
-    render(merged);
+    await refreshListings();
   })();
 
   window.addEventListener("load", ()=>{
@@ -637,16 +593,3 @@ function normalizeDriveImageUrl(u){
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
