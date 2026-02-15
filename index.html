@@ -255,6 +255,7 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbzuKt4qWsyJfTYYLJf4BNUmztBo-jFV7a2vCULgJ2SuzOWOxHII94gJQzTANBP4G0b00w/exec";
     let map = L.map('map').setView([13.7367, 100.5231], 5); // ค่าเริ่มต้น: กรุงเทพ
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
@@ -280,25 +281,48 @@
       });
     }
 
-    function render(list){
-      markers.clearLayers();
-      const container = document.getElementById('listings');
-      container.innerHTML = '';
-      if(list.length === 0){ container.innerHTML = '<i>ไม่มีรายการ</i>'; return; }
+   function render(list){
+  markers.clearLayers();
+  const container = document.getElementById('listings');
+  container.innerHTML = '';
 
-      list.forEach(item=>{
-        // map marker
-        if(item.lat && item.lng){
-          const m = L.marker([item.lat, item.lng]).addTo(markers);
-          m.bindPopup(`<b>${item.title}</b><br>${item.province}<br>${item.price ? '฿'+item.price : ''}<br><a href="tel:${item.phone}">โทร: ${item.phone}</a>`);
-        }
-        // list card
-        const card = document.createElement('div'); card.className='card';
-        card.innerHTML = `<b>${item.title}</b><div>${item.province} • ${item.type}</div><div>ราคา: ${item.price? '฿'+item.price : '-'}</div>
-          <div style="margin-top:6px;"><a class="btn-call" href="tel:${item.phone}">โทรหาเจ้าของ</a> <a href="#" onclick="alert('แชร์ URL ของรายการ');return false;">แชร์</a></div>`;
-        container.appendChild(card);
-      });
+  if(!list || list.length === 0){
+    container.innerHTML = '<i class="small">ไม่มีรายการ</i>';
+    return;
+  }
+
+  list.forEach(item => {
+    const contact = item.contact || item.phone || ''; // รองรับทั้งข้อมูลจากชีตและ listings.json
+    const priceText = item.price ? '฿' + Number(item.price).toLocaleString() : '-';
+
+    // ===== map marker =====
+    if(item.lat && item.lng){
+      const m = L.marker([Number(item.lat), Number(item.lng)]).addTo(markers);
+      m.bindPopup(`
+        <b>${item.title || '-'}</b><br>
+        ${item.province || '-'} • ${item.type || '-'}<br>
+        ราคา: ${priceText}<br>
+        ${contact ? `<a href="tel:${contact}">โทร/ติดต่อ: ${contact}</a>` : ``}
+      `);
     }
+
+    // ===== list card (สวยแบบ card-item) =====
+    const card = document.createElement('div');
+    card.className = 'card-item';
+    card.innerHTML = `
+      <b>${item.title || '-'}</b>
+      <div class="meta">${item.province || '-'} • ${item.type || '-'} • ราคา: ${priceText}</div>
+      ${item.detail ? `<div style="margin-top:8px;">${item.detail}</div>` : ``}
+
+      <div class="actions">
+        ${contact ? `<a class="btn btn-primary" style="text-decoration:none" href="tel:${contact}">โทร/ติดต่อ</a>` : ``}
+        ${contact ? `<span class="small">ติดต่อ: <b>${contact}</b></span>` : `<span class="small">ยังไม่มีช่องทางติดต่อ</span>`}
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
 
     // filters
     document.getElementById('provinceSelect').addEventListener('change', applyFilters);
@@ -319,7 +343,7 @@
         if(prov && (i.province||'').toLowerCase() !== prov) return false;
         if(type && i.type !== type) return false;
         if(q){
-          const s = `${i.title} ${i.phone} ${i.province} ${i.type}`.toLowerCase();
+          const s = `${i.title} ${(i.contact || i.phone || '')} ${i.province} ${i.type}`.toLowerCase();
           if(!s.includes(q)) return false;
         }
         return true;
@@ -419,11 +443,11 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   }
 });
 
-    const API_URL = "https://script.google.com/macros/s/AKfycbzuKt4qWsyJfTYYLJf4BNUmztBo-jFV7a2vCULgJ2SuzOWOxHII94gJQzTANBP4G0b00w/exec";
 
   </script>
 </body>
 </html>
+
 
 
 
