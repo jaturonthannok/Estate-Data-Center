@@ -345,9 +345,41 @@ function normalizeDriveImageUrl(u){
         ${item.detail ? `<div style="margin-top:8px;">${item.detail}</div>` : ``}
         ${images.length ? `<div class="thumbs">${thumbs}</div>` : ``}
         <div class="actions">
-          ${contact ? `<span class="contact-badge">ติดต่อ: <b>${contact}</b></span>` : `<span class="small">ยังไม่มีช่องทางติดต่อ</span>`}
-          <button class="btn btn-ghost btn-edit" type="button">แก้ไข</button>
-        </div>
+  ${contact ? `<span class="contact-badge">ติดต่อ: <b>${contact}</b></span>` : `<span class="small">ยังไม่มีช่องทางติดต่อ</span>`}
+  <button class="btn btn-ghost btn-edit" type="button">แก้ไข</button>
+  <button class="btn btn-ghost btn-del" type="button">ลบ</button>
+</div>
+
+card.querySelector(".btn-del").addEventListener("click", async ()=>{
+  if(!confirm("ต้องการลบประกาศนี้ใช่ไหม?")) return;
+
+  const confirmContact = prompt("เพื่อความปลอดภัย กรุณาพิมพ์ เบอร์/ไลน์ ให้ตรงกับที่ลงประกาศไว้");
+  if(!confirmContact) return;
+
+  const msg = document.getElementById("formMsg");
+  if(msg) msg.textContent = "กำลังลบ...";
+
+  const r = await submitToSheet({
+    mode: "delete",
+    id: item.id,
+    confirm_contact: confirmContact.trim()
+  });
+
+  if(r.ok){
+    if(msg) msg.textContent = "ลบแล้ว ✅";
+    // โหลดรายการใหม่
+    try{
+      approvedListings = await loadApprovedFromSheet();
+    }catch(e){ approvedListings = []; }
+    const merged = [...approvedListings, ...allListings];
+    populateProvinceOptionsFrom(merged);
+    render(merged);
+  }else{
+    if(msg) msg.textContent = "ลบไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ");
+    alert("ลบไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ"));
+  }
+});
+
       `;
 
       if(images.length){
@@ -578,6 +610,7 @@ function normalizeDriveImageUrl(u){
 </script>
 </body>
 </html>
+
 
 
 
