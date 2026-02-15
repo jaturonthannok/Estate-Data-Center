@@ -395,11 +395,13 @@ async function loadApprovedFromSheet(){
 }
 
 async function submitToSheet(payload){
+  const body = new URLSearchParams(payload); // ส่งแบบฟอร์ม (ไม่ใช่ JSON)
   const res = await fetch(API_URL, {
     method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify(payload)
+    body
   });
+
+  // พยายามอ่านเป็น json (ถ้าอ่านไม่ได้จะ throw)
   return await res.json();
 }
 
@@ -458,6 +460,7 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   </script>
 </body>
 </html>
+
 
 
 
