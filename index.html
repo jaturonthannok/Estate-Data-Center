@@ -287,11 +287,32 @@
   }
 
   function parseImages(x){
-    try{
-      const arr = Array.isArray(x) ? x : (typeof x === "string" ? JSON.parse(x || "[]") : []);
-      return (arr || []).filter(Boolean);
-    }catch(e){ return []; }
+  try{
+    const arr = Array.isArray(x) ? x : (typeof x === "string" ? JSON.parse(x || "[]") : []);
+    return (arr || []).map(normalizeDriveImageUrl).filter(Boolean);
+  }catch(e){
+    return [];
   }
+}
+function normalizeDriveImageUrl(u){
+  u = (u || "").trim();
+  if(!u) return "";
+
+  // ถ้าเป็น uc?export=view&id=...
+  let m = u.match(/drive\.google\.com\/uc\?export=view&id=([a-zA-Z0-9_-]+)/);
+  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`;
+
+  // ถ้าเป็น file/d/ID/view
+  m = u.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`;
+
+  // ถ้าเป็น open?id=ID
+  m = u.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
+  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`;
+
+  return u;
+}
+
 
   function render(list){
     markers.clearLayers();
@@ -316,7 +337,8 @@
       const card = document.createElement('div');
       card.className = 'card-item';
 
-      const thumbs = images.slice(0,8).map((u,idx)=>`<img class="thumb" src="${u}" alt="img" data-idx="${idx}" />`).join("");
+      const thumbs = images.slice(0,8).map((u,idx)=>`<img class="thumb" src="${u}" referrerpolicy="no-referrer" onerror="this.style.display='none'" ...
+" alt="img" data-idx="${idx}" />`).join("");
 
       card.innerHTML = `
         <b>${item.title || '-'}</b>
@@ -515,7 +537,7 @@
       .setCallback((data)=>{
         if(data.action !== google.picker.Action.PICKED) return;
         const picked = data.docs || [];
-        const newUrls = picked.map(d => `https://drive.google.com/uc?export=view&id=${d.id}`);
+        const newUrls = picked.map(d => `https://drive.google.com/thumbnail?id=${d.id}&sz=w1000`);
         setImages([...getImages(), ...newUrls]);
       })
       .build();
@@ -557,6 +579,7 @@
 </script>
 </body>
 </html>
+
 
 
 
