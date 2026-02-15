@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <title>Simple Land Finder</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    body{font-family:system-ui, "Segoe UI", Roboto, "Noto Sans", sans-serif; margin:0; padding:0;}
+    header{padding:12px; background:#0b74de; color:#fff;}
+    #map{height:60vh;}
+    .controls{padding:10px; display:flex; gap:8px; flex-wrap:wrap;}
+    .listings{padding:10px;}
+    .card{border:1px solid #ddd; padding:8px; margin-bottom:8px;border-radius:6px;}
+    .btn-call{background:#28a745;color:#fff;padding:6px 8px;border-radius:4px;text-decoration:none;}
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Simple Land Finder (เบื้องต้น)</h2>
+  </header>
+
+  <div class="controls">
+    <select id="provinceSelect">
+      <option value="">ทุกจังหวัด</option>
+    </select>
+    <select id="typeSelect">
+      <option value="">ทุกประเภท</option>
+      <option value="land">ที่ดิน</option>
+      <option value="house">บ้าน</option>
+      <option value="condo">คอนโด</option>
+    </select>
+    <input id="searchInput" placeholder="ค้นหาคำ เช่น ชื่อ, เบอร์" style="flex:1; padding:6px;" />
+    <button id="resetBtn">รีเซ็ต</button>
+  </div>
+
+  <div id="map"></div>
+
+  <div class="listings" id="listings"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    let map = L.map('map').setView([13.736717, 100.523186], 6); // ค่าเริ่มต้น: กรุงเทพ
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let markers = L.layerGroup().addTo(map);
+    let allListings = [];
+
+    async function loadListings(){
+      const res = await fetch('listings.json');
+      const data = await res.json();
+      allListings = data;
+      populateProvinceOptions();
+      render(allListings);
+    }
+
+    function populateProvinceOptions(){
+      const set = new Set(allListings.map(l=>l.province).filter(Boolean));
+      const sel = document.getElementById('provinceSelect');
+      set.forEach(p=>{
+        const opt = document.createElement('option'); opt.value = p; opt.textContent = p;
+        sel.appendChild(opt);
+      });
+    }
+
+    function render(list){
+      markers.clearLayers();
+      const container = document.getElementById('listings');
+      container.innerHTML = '';
+      if(list.length === 0){ container.innerHTML = '<i>ไม่มีรายการ</i>'; return; }
+
+      list.forEach(item=>{
+        // map marker
+        if(item.lat && item.lng){
+          const m = L.marker([item.lat, item.lng]).addTo(markers);
+          m.bindPopup(`<b>${item.title}</b><br>${item.province}<br>${item.price ? '฿'+item.price : ''}<br><a href="tel:${item.phone}">โทร: ${item.phone}</a>`);
+        }
+        // list card
+        const card = document.createElement('div'); card.className='card';
+        card.innerHTML = `<b>${item.title}</b><div>${item.province} • ${item.type}</div><div>ราคา: ${item.price? '฿'+item.price : '-'}</div>
+          <div style="margin-top:6px;"><a class="btn-call" href="tel:${item.phone}">โทรหาเจ้าของ</a> <a href="#" onclick="alert('แชร์ URL ของรายการ');return false;">แชร์</a></div>`;
+        container.appendChild(card);
+      });
+    }
+
+    // filters
+    document.getElementById('provinceSelect').addEventListener('change', applyFilters);
+    document.getElementById('typeSelect').addEventListener('change', applyFilters);
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      document.getElementById('provinceSelect').value='';
+      document.getElementById('typeSelect').value='';
+      document.getElementById('searchInput').value='';
+      render(allListings);
+    });
+
+    function applyFilters(){
+      const prov = document.getElementById('provinceSelect').value.trim().toLowerCase();
+      const type = document.getElementById('typeSelect').value;
+      const q = document.getElementById('searchInput').value.trim().toLowerCase();
+      const filtered = allListings.filter(i=>{
+        if(prov && (i.province||'').toLowerCase() !== prov) return false;
+        if(type && i.type !== type) return false;
+        if(q){
+          const s = `${i.title} ${i.phone} ${i.province} ${i.type}`.toLowerCase();
+          if(!s.includes(q)) return false;
+        }
+        return true;
+      });
+      render(filtered);
+    }
+
+    loadListings();
+  </script>
+</body>
+</html>
