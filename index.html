@@ -326,7 +326,8 @@
 
       <div class="actions">
         ${contact ? `<a class="btn btn-primary" style="text-decoration:none" href="tel:${contact}">โทร/ติดต่อ</a>` : ``}
-        ${contact ? `<span class="small">ติดต่อ: <b>${contact}</b></span>` : `<span class="small">ยังไม่มีช่องทางติดต่อ</span>`}
+        ${contact ? `<span class="contact-badge">ติดต่อ: <b>${contact}</b></span>
+` : `<span class="small">ยังไม่มีช่องทางติดต่อ</span>`}
       </div>
     `;
     container.appendChild(card);
@@ -457,6 +458,7 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   </script>
 </body>
 </html>
+
 
 
 
