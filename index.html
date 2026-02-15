@@ -6,76 +6,256 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
-    body{font-family:system-ui, "Segoe UI", Roboto, "Noto Sans", sans-serif; margin:0; padding:0;}
-    header{padding:12px; background:#0b74de; color:#fff;}
-    #map{height:60vh;}
-    .controls{padding:10px; display:flex; gap:8px; flex-wrap:wrap;}
-    .listings{padding:10px;}
-    .card{border:1px solid #ddd; padding:8px; margin-bottom:8px;border-radius:6px;}
-    .btn-call{background:#28a745;color:#fff;padding:6px 8px;border-radius:4px;text-decoration:none;}
-  </style>
+  :root{
+    --bg:#f6f8fb;
+    --card:#ffffff;
+    --text:#0f172a;
+    --muted:#64748b;
+    --border:#e2e8f0;
+    --primary:#0b74de;
+    --primary2:#095db1;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai","Noto Sans",sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  header{
+    background:linear-gradient(90deg,var(--primary),var(--primary2));
+    color:#fff;
+    padding:18px 16px;
+    position:sticky; top:0; z-index:10;
+    box-shadow:0 8px 20px rgba(2,6,23,.08);
+  }
+  header .title{
+    max-width:1100px; margin:0 auto;
+    font-size:20px; font-weight:800;
+  }
+
+  .container{
+    max-width:1100px;
+    margin:16px auto;
+    padding:0 12px 24px;
+    display:grid;
+    grid-template-columns: 360px 1fr;
+    gap:14px;
+  }
+
+  @media (max-width: 900px){
+    .container{grid-template-columns:1fr}
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    box-shadow:0 10px 25px rgba(2,6,23,.06);
+    overflow:hidden;
+  }
+
+  .card .card-h{
+    padding:12px 14px;
+    border-bottom:1px solid var(--border);
+    font-weight:800;
+  }
+
+  .card .card-b{
+    padding:14px;
+  }
+
+  label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
+  input, select, textarea{
+    width:100%;
+    border:1px solid var(--border);
+    background:#fff;
+    border-radius:10px;
+    padding:10px 10px;
+    font-size:14px;
+    outline:none;
+  }
+  textarea{min-height:84px; resize:vertical}
+
+  input:focus, select:focus, textarea:focus{
+    border-color:#93c5fd;
+    box-shadow:0 0 0 3px rgba(59,130,246,.15);
+  }
+
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+  @media (max-width: 900px){
+    .row,.row3{grid-template-columns:1fr}
+  }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    gap:8px;
+    border:0;
+    padding:10px 12px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:700;
+  }
+  .btn-primary{background:var(--primary); color:#fff}
+  .btn-primary:hover{background:var(--primary2)}
+  .btn-ghost{background:#eef2ff; color:#1e3a8a}
+  .btn-ghost:hover{background:#e0e7ff}
+
+  .small{font-size:12px; color:var(--muted)}
+
+  /* right panel */
+  .filters{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .filters > *{flex:1; min-width:160px}
+  .filters .btn{flex:0}
+
+  #listings .card-item{
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:12px;
+    margin-top:10px;
+  }
+  #listings .card-item b{font-size:15px}
+  #listings .meta{color:var(--muted); font-size:12px; margin-top:4px}
+  #listings .actions{margin-top:10px; display:flex; gap:10px; flex-wrap:wrap}
+  #listings a{color:var(--primary); text-decoration:none}
+  #listings a:hover{text-decoration:underline}
+
+  /* map */
+  .map-wrap{max-width:1100px; margin:0 auto 24px; padding:0 12px;}
+  #map{
+    height:420px;
+    border-radius:var(--radius);
+    border:1px solid var(--border);
+    box-shadow:0 10px 25px rgba(2,6,23,.06);
+    overflow:hidden;
+  }
+
+  .consent{
+    display:flex; gap:10px; align-items:flex-start;
+    font-size:12px; color:var(--muted);
+  }
+  .consent input{width:auto; margin-top:2px}
+</style>
+
 </head>
 <body>
-  <header>
-    <h2>Simple Land Finder (เบื้องต้น)</h2>
-  </header>
+ <header>
+  <div class="title">Estate-Data-Center • รวมประกาศอสังหา (ทดลอง)</div>
+</header>
 
-  <div class="controls">
-    <div style="padding:10px; border-top:1px solid #ddd;">
-  <h3>ลงประกาศขาย (ต้องรออนุมัติ)</h3>
+<div class="container">
 
-  <form id="sellForm" style="display:grid; gap:8px; max-width:520px;">
-    <input id="fullName" placeholder="ชื่อ (หรือชื่อ-นามสกุล)" required />
-    <input id="contact" placeholder="เบอร์โทรหรือไลน์ (เช่น 089xxxxxxx หรือ Line: abc)" required />
+  <!-- LEFT: Form -->
+  <div class="card">
+    <div class="card-h">ลงประกาศขาย (ต้องรออนุมัติ)</div>
+    <div class="card-b">
+      <form id="sellForm" style="display:grid; gap:10px;">
+        <div>
+          <label>ชื่อ (หรือชื่อ-นามสกุล)</label>
+          <input id="fullName" placeholder="เช่น จตุรนต์" required />
+        </div>
 
-    <select id="province" required></select>
+        <div>
+          <label>เบอร์โทรหรือไลน์</label>
+          <input id="contact" placeholder="เช่น 089xxxxxxx หรือ Line: abc" required />
+        </div>
 
-    <select id="type" required>
-      <option value="">เลือกประเภท</option>
-      <option value="land">ที่ดิน</option>
-      <option value="house">บ้าน</option>
-      <option value="condo">คอนโด</option>
-    </select>
+        <div class="row">
+          <div>
+            <label>จังหวัด</label>
+            <select id="province" required></select>
+          </div>
+          <div>
+            <label>ประเภท</label>
+            <select id="type" required>
+              <option value="">เลือกประเภท</option>
+              <option value="land">ที่ดิน</option>
+              <option value="house">บ้าน</option>
+              <option value="condo">คอนโด</option>
+            </select>
+          </div>
+        </div>
 
-    <input id="title" placeholder="หัวข้อประกาศ เช่น ที่ดินติดถนน" required />
-    <input id="price" type="number" placeholder="ราคา (บาท)" required />
+        <div>
+          <label>หัวข้อประกาศ</label>
+          <input id="title" placeholder="เช่น ที่ดินติดถนน" required />
+        </div>
 
-    <input id="lat" placeholder="ละติจูด (lat) เช่น 13.7367 (ไม่ใส่ก็ได้)" />
-    <input id="lng" placeholder="ลองจิจูด (lng) เช่น 100.5231 (ไม่ใส่ก็ได้)" />
+        <div class="row">
+          <div>
+            <label>ราคา (บาท)</label>
+            <input id="price" type="number" placeholder="เช่น 1200000" required />
+          </div>
+          <div>
+            <label>ตำแหน่ง (ไม่ใส่ก็ได้)</label>
+            <div class="row">
+              <input id="lat" placeholder="lat" />
+              <input id="lng" placeholder="lng" />
+            </div>
+          </div>
+        </div>
 
-    <textarea id="detail" placeholder="รายละเอียด (ขนาด, ทำเล, จุดเด่น)"></textarea>
+        <div>
+          <label>รายละเอียด</label>
+          <textarea id="detail" placeholder="ขนาด, ทำเล, จุดเด่น"></textarea>
+        </div>
 
-    <label style="display:flex; gap:8px; align-items:center;">
-      <input type="checkbox" id="consent" required />
-      ยินยอมให้เผยแพร่ “ข้อมูลประกาศ + ช่องทางติดต่อ” บนเว็บไซต์
-    </label>
+        <label class="consent">
+          <input type="checkbox" id="consent" required />
+          <span>ยินยอมให้เผยแพร่ “ข้อมูลประกาศ + ช่องทางติดต่อ” บนเว็บไซต์</span>
+        </label>
 
-    <button type="submit">ส่งประกาศ</button>
-  </form>
+        <button class="btn btn-primary" type="submit">ส่งประกาศ</button>
+        <div id="formMsg" class="small"></div>
+      </form>
 
-  <p id="formMsg" style="margin-top:8px;"></p>
-</div>
-
-    <select id="provinceSelect">
-      <option value="">ทุกจังหวัด</option>
-    </select>
-    <select id="typeSelect">
-      <option value="">ทุกประเภท</option>
-      <option value="land">ที่ดิน</option>
-      <option value="house">บ้าน</option>
-      <option value="condo">คอนโด</option>
-    </select>
-    <input id="searchInput" placeholder="ค้นหาคำ เช่น ชื่อ, เบอร์" style="flex:1; padding:6px;" />
-    <button id="resetBtn">รีเซ็ต</button>
+      <div class="small" style="margin-top:10px;">
+        * หลังส่งแล้วจะเป็น <b>PENDING</b> ในชีต → คุณค่อยเปลี่ยนเป็น <b>APPROVED</b> เพื่อให้ขึ้นหน้าเว็บ
+      </div>
+    </div>
   </div>
 
-  <div id="map"></div>
+  <!-- RIGHT: Search + Listings -->
+  <div class="card">
+    <div class="card-h">ค้นหาและดูรายการ</div>
+    <div class="card-b">
+      <div class="filters">
+        <select id="provinceSelect">
+          <option value="">ทุกจังหวัด</option>
+        </select>
 
-  <div class="listings" id="listings"></div>
+        <select id="typeSelect">
+          <option value="">ทุกประเภท</option>
+          <option value="land">ที่ดิน</option>
+          <option value="house">บ้าน</option>
+          <option value="condo">คอนโด</option>
+        </select>
+
+        <input id="searchInput" placeholder="ค้นหา เช่น ชื่อประกาศ / เบอร์ / จังหวัด" />
+        <button class="btn btn-ghost" id="resetBtn" type="button">รีเซ็ต</button>
+      </div>
+
+      <div id="listings"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="map-wrap">
+  <div id="map"></div>
+</div>
+
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    let map = L.map('map').setView([13.736717, 100.523186], 6); // ค่าเริ่มต้น: กรุงเทพ
+    let map = L.map('map').setView([13.7367, 100.5231], 5); // ค่าเริ่มต้น: กรุงเทพ
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors'
     }).addTo(map);
@@ -244,5 +424,6 @@ document.addEventListener("DOMContentLoaded", async ()=>{
   </script>
 </body>
 </html>
+
 
 
