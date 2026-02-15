@@ -54,7 +54,7 @@
     .img-box{border:1px dashed var(--border);border-radius:12px;padding:12px;background:#fff;cursor:pointer;}
     .img-box:hover{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
     .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .thumb{width:64px;height:64px;border-radius:10px;object-fit:cover;border:1px solid var(--border);cursor:pointer}
+    .thumb{width:100px;height:200px;border-radius:10px;object-fit:cover;border:1px solid var(--border);cursor:pointer}
 
     .map-wrap{max-width:1100px;margin:0 auto 24px;padding:0 12px;}
     #map{height:420px;border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 10px 25px rgba(2,6,23,.06);overflow:hidden;}
@@ -299,15 +299,15 @@ function normalizeDriveImageUrl(u){
 
   // ถ้าเป็น uc?export=view&id=...
   let m = u.match(/drive\.google\.com\/uc\?export=view&id=([a-zA-Z0-9_-]+)/);
-  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600`;
+  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w3000`;
 
   // ถ้าเป็น file/d/ID/view
   m = u.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600`;
+  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w3000`;
 
   // ถ้าเป็น open?id=ID
   m = u.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
-  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600`;
+  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w3000`;
 
   return u;
 }
@@ -536,7 +536,7 @@ function normalizeDriveImageUrl(u){
       .setCallback((data)=>{
         if(data.action !== google.picker.Action.PICKED) return;
         const picked = data.docs || [];
-        const newUrls = picked.map(d => `https://drive.google.com/thumbnail?id=${d.id}&sz=w1600`);
+        const newUrls = picked.map(d => `https://drive.google.com/thumbnail?id=${d.id}&sz=w3000`);
         setImages([...getImages(), ...newUrls]);
       })
       .build();
@@ -578,6 +578,7 @@ function normalizeDriveImageUrl(u){
 </script>
 </body>
 </html>
+
 
 
 
