@@ -300,15 +300,15 @@ function normalizeDriveImageUrl(u){
 
   // ถ้าเป็น uc?export=view&id=...
   let m = u.match(/drive\.google\.com\/uc\?export=view&id=([a-zA-Z0-9_-]+)/);
-  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`;
+  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600`;
 
   // ถ้าเป็น file/d/ID/view
   m = u.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`;
+  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600`;
 
   // ถ้าเป็น open?id=ID
   m = u.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/);
-  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`;
+  if(m && m[1]) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600`;
 
   return u;
 }
@@ -537,7 +537,7 @@ function normalizeDriveImageUrl(u){
       .setCallback((data)=>{
         if(data.action !== google.picker.Action.PICKED) return;
         const picked = data.docs || [];
-        const newUrls = picked.map(d => `https://drive.google.com/thumbnail?id=${d.id}&sz=w1000`);
+        const newUrls = picked.map(d => `https://drive.google.com/thumbnail?id=${d.id}&sz=w1600`);
         setImages([...getImages(), ...newUrls]);
       })
       .build();
@@ -579,6 +579,7 @@ function normalizeDriveImageUrl(u){
 </script>
 </body>
 </html>
+
 
 
 
