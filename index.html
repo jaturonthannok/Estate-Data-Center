@@ -551,5 +551,330 @@
     }
   })();
 </script>
+  
+<!-- Google Sign-In (GIS) -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+  const API_URL = "ใส่-URL-เว็บแอป-ของคุณ/exec";  // <<<< สำคัญ
+  const GOOGLE_CLIENT_ID = "86449545414-but5pc5o9ocri2eurd016aaolfpktbh9.apps.googleusercontent.com";
+
+  let currentUser = null; // {email, id_token}
+
+  // ===== UI Login =====
+  function mountLoginUI(){
+    // สร้างปุ่ม login ง่ายๆ บน header
+    const header = document.querySelector("header .title");
+    if(!header) return;
+
+    const wrap = document.createElement("div");
+    wrap.style.display = "flex";
+    wrap.style.justifyContent = "center";
+    wrap.style.gap = "12px";
+    wrap.style.alignItems = "center";
+    wrap.style.marginTop = "10px";
+
+    const status = document.createElement("div");
+    status.id = "loginStatus";
+    status.style.fontSize = "12px";
+    status.style.opacity = "0.95";
+    status.textContent = "ยังไม่ได้ล็อกอิน";
+
+    const btnOut = document.createElement("button");
+    btnOut.textContent = "ออกจากระบบ";
+    btnOut.className = "btn btn-ghost";
+    btnOut.type = "button";
+    btnOut.style.display = "none";
+    btnOut.onclick = ()=>{
+      currentUser = null;
+      localStorage.removeItem("id_token");
+      renderMerged(); // รีเรนเดอร์ให้ปุ่มลบ/แก้ไขหาย
+      updateLoginStatus();
+      alert("ออกจากระบบแล้ว");
+    };
+
+    const gDiv = document.createElement("div");
+    gDiv.id = "gSignIn";
+
+    wrap.appendChild(status);
+    wrap.appendChild(btnOut);
+    wrap.appendChild(gDiv);
+    header.appendChild(wrap);
+
+    window.__logoutBtn__ = btnOut;
+  }
+
+  function updateLoginStatus(){
+    const el = document.getElementById("loginStatus");
+    if(!el) return;
+    if(currentUser?.email){
+      el.textContent = "ล็อกอินแล้ว: " + currentUser.email;
+      if(window.__logoutBtn__) window.__logoutBtn__.style.display = "";
+    }else{
+      el.textContent = "ยังไม่ได้ล็อกอิน";
+      if(window.__logoutBtn__) window.__logoutBtn__.style.display = "none";
+    }
+  }
+
+  // ===== Load Listings =====
+  let allListings = [];
+  let approvedListings = [];
+
+  async function loadLocalListings(){
+    const res = await fetch("listings.json");
+    allListings = await res.json();
+  }
+
+  async function loadApprovedFromSheet(){
+    const res = await fetch(`${API_URL}?status=APPROVED`);
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.error || "โหลดไม่สำเร็จ");
+    approvedListings = data.listings || [];
+  }
+
+  function mergedListings(){
+    // ตัด DELETED ออก
+    return [...approvedListings, ...allListings].filter(x => String(x.status||"").toUpperCase() !== "DELETED");
+  }
+
+  function renderMerged(){
+    const merged = mergedListings();
+    populateProvinceOptionsFrom(merged);
+    render(merged);
+  }
+
+  // ===== ส่งข้อมูลไป Apps Script แบบ form-urlencoded =====
+  async function submitToSheet(payload){
+    if(!currentUser?.id_token){
+      alert("ต้องล็อกอินด้วย Gmail ก่อน");
+      throw new Error("not logged in");
+    }
+
+    const body = new URLSearchParams({...payload, id_token: currentUser.id_token});
+    const res = await fetch(API_URL, { method:"POST", body });
+
+    const text = await res.text();
+    try{ return JSON.parse(text); }
+    catch(e){ return {ok:false, error:"API ไม่ได้ตอบ JSON: " + text.slice(0,200)}; }
+  }
+
+  // ===== Helpers =====
+  function populateProvinceOptionsFrom(list){
+    const sel = document.getElementById('provinceSelect');
+    if(!sel) return;
+    sel.innerHTML = `<option value="">ทุกจังหวัด</option>`;
+    const set = new Set(list.map(l => l.province).filter(Boolean));
+    [...set].sort().forEach(p=>{
+      const opt = document.createElement('option');
+      opt.value = p; opt.textContent = p;
+      sel.appendChild(opt);
+    });
+  }
+
+  function canManage(item){
+    return currentUser?.email && String(item.owner_email||"").trim() === currentUser.email;
+  }
+
+  // ===== Render (สำคัญ: แสดงปุ่มแก้ไข/ลบ เฉพาะเจ้าของ) =====
+  function render(list){
+    const container = document.getElementById("listings");
+    container.innerHTML = "";
+
+    if(!list.length){
+      container.innerHTML = `<i class="small">ไม่มีรายการ</i>`;
+      return;
+    }
+
+    list.forEach(item=>{
+      const card = document.createElement("div");
+      card.className = "card-item";
+
+      const priceText = item.price ? "฿" + Number(item.price).toLocaleString() : "-";
+      const sold = (item.sold_status || "ยังไม่ขาย").trim();
+
+      card.innerHTML = `
+        <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;">
+          <b>${item.title || "-"}</b>
+          <span class="contact-badge" style="background:${sold === "ขายแล้ว" ? "#64748b" : "#16a34a"}">${sold}</span>
+        </div>
+
+        <div class="meta">${item.province || "-"} • ${item.type || "-"} • ราคา: ${priceText}</div>
+
+        <div class="actions">
+          <span class="contact-badge">ติดต่อ: <b>${item.contact || "-"}</b></span>
+
+          ${canManage(item) ? `
+            <button class="btn btn-ghost btn-edit" type="button">แก้ไข</button>
+            <button class="btn btn-ghost btn-del" type="button">ลบ</button>
+            <select class="btn btn-ghost btn-sold" style="padding:10px;border:1px solid #e2e8f0">
+              <option value="ยังไม่ขาย" ${sold==="ยังไม่ขาย"?"selected":""}>ยังไม่ขาย</option>
+              <option value="ขายแล้ว" ${sold==="ขายแล้ว"?"selected":""}>ขายแล้ว</option>
+            </select>
+          ` : `
+            <span class="small">* ปุ่มแก้ไข/ลบจะเห็นเฉพาะเจ้าของโพสต์</span>
+          `}
+        </div>
+      `;
+
+      container.appendChild(card);
+
+      // ===== Events เฉพาะเจ้าของ =====
+      if(canManage(item)){
+        card.querySelector(".btn-edit").onclick = ()=>{
+          // เติมข้อมูลลงฟอร์ม แล้วตั้งโหมดแก้ไข
+          document.getElementById("fullName").value = item.full_name || "";
+          document.getElementById("contact").value = item.contact || "";
+          document.getElementById("province").value = item.province || "";
+          document.getElementById("type").value = item.type || "";
+          document.getElementById("title").value = item.title || "";
+          document.getElementById("price").value = item.price || "";
+          document.getElementById("lat").value = item.lat || "";
+          document.getElementById("lng").value = item.lng || "";
+          document.getElementById("detail").value = item.detail || "";
+          document.getElementById("sold_status").value = item.sold_status || "ยังไม่ขาย";
+          document.getElementById("editing_id").value = item.id || "";
+          document.getElementById("formMsg").textContent = "โหมดแก้ไข: กดส่งเพื่ออัปเดตโพสต์เดิม (จะรออนุมัติใหม่)";
+          window.scrollTo({top:0, behavior:"smooth"});
+        };
+
+        card.querySelector(".btn-del").onclick = async ()=>{
+          if(!confirm("ยืนยันลบโพสต์นี้?")) return;
+          const msg = document.getElementById("formMsg");
+          msg.textContent = "กำลังลบ...";
+
+          const r = await submitToSheet({mode:"delete", id:item.id});
+          if(r.ok){
+            msg.textContent = "ลบแล้ว ✅";
+            await loadApprovedFromSheet();
+            renderMerged();
+          }else{
+            msg.textContent = "ลบไม่สำเร็จ: " + (r.error||"");
+            alert("ลบไม่สำเร็จ: " + (r.error||""));
+          }
+        };
+
+        card.querySelector(".btn-sold").onchange = async (ev)=>{
+          const sold_status = ev.target.value;
+          const r = await submitToSheet({mode:"sold", id:item.id, sold_status});
+          if(!r.ok) alert("อัปเดตสถานะไม่สำเร็จ: " + (r.error||""));
+          await loadApprovedFromSheet();
+          renderMerged();
+        };
+      }
+    });
+  }
+
+  // ===== Form submit: create/update (อัปเดตโพสต์เดิม) =====
+  document.addEventListener("DOMContentLoaded", ()=>{
+    // เพิ่ม hidden field สำหรับโหมดแก้ไข
+    const form = document.getElementById("sellForm");
+    const hidden = document.createElement("input");
+    hidden.type = "hidden";
+    hidden.id = "editing_id";
+    hidden.value = "";
+    form.appendChild(hidden);
+
+    // เพิ่ม dropdown sold_status ในฟอร์ม (ถ้ายังไม่มี)
+    if(!document.getElementById("sold_status")){
+      const wrap = document.createElement("div");
+      wrap.innerHTML = `
+        <label>สถานะทรัพย์</label>
+        <select id="sold_status" required>
+          <option value="ยังไม่ขาย">ยังไม่ขาย</option>
+          <option value="ขายแล้ว">ขายแล้ว</option>
+        </select>
+      `;
+      form.insertBefore(wrap, form.querySelector(".consent"));
+    }
+
+    form.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const msg = document.getElementById("formMsg");
+      msg.textContent = "กำลังส่ง...";
+
+      const id = document.getElementById("editing_id").value.trim();
+
+      const payload = {
+        full_name: document.getElementById("fullName").value.trim(),
+        contact: document.getElementById("contact").value.trim(),
+        province: document.getElementById("province").value,
+        type: document.getElementById("type").value,
+        title: document.getElementById("title").value.trim(),
+        price: document.getElementById("price").value,
+        lat: document.getElementById("lat").value.trim(),
+        lng: document.getElementById("lng").value.trim(),
+        detail: document.getElementById("detail").value.trim(),
+        images: document.getElementById("images") ? document.getElementById("images").value : "[]",
+        sold_status: document.getElementById("sold_status").value
+      };
+
+      try{
+        let r;
+        if(id){
+          r = await submitToSheet({mode:"update", id, ...payload});
+        }else{
+          r = await submitToSheet({mode:"create", ...payload});
+        }
+
+        if(r.ok){
+          msg.textContent = id ? "อัปเดตแล้ว ✅ (รออนุมัติใหม่)" : "ส่งประกาศแล้ว ✅ (รออนุมัติ)";
+          e.target.reset();
+          document.getElementById("editing_id").value = "";
+          await loadApprovedFromSheet();
+          renderMerged();
+        }else{
+          msg.textContent = "ส่งไม่สำเร็จ: " + (r.error||"");
+        }
+      }catch(err){
+        msg.textContent = "ส่งไม่สำเร็จ: " + err.message;
+      }
+    });
+  });
+
+  // ===== Init Google Sign-In =====
+  window.onload = async ()=>{
+    mountLoginUI();
+
+    // render button
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: (resp)=>{
+        // resp.credential = id_token
+        const id_token = resp.credential;
+        localStorage.setItem("id_token", id_token);
+
+        // ดึง email จริงจาก token (decode แบบง่าย)
+        const parts = id_token.split(".");
+        const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+        currentUser = { email: payload.email, id_token };
+        updateLoginStatus();
+        renderMerged();
+      }
+    });
+
+    google.accounts.id.renderButton(
+      document.getElementById("gSignIn"),
+      { theme:"outline", size:"large", text:"signin_with" }
+    );
+
+    // โหลด token เก่าถ้ามี
+    const cached = localStorage.getItem("id_token");
+    if(cached){
+      try{
+        const parts = cached.split(".");
+        const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+        currentUser = { email: payload.email, id_token: cached };
+      }catch(e){}
+    }
+    updateLoginStatus();
+
+    // โหลดข้อมูล
+    await loadLocalListings();
+    await loadApprovedFromSheet();
+    renderMerged();
+  };
+</script>
+
 </body>
 </html>
+
