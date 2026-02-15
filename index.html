@@ -414,10 +414,17 @@
 
   // ===== Submit to Sheet (form-urlencoded to avoid Failed to fetch) =====
   async function submitToSheet(payload){
-    const body = new URLSearchParams(payload);
-    const res = await fetch(API_URL, { method:"POST", body });
-    return await res.json();
+  const body = new URLSearchParams(payload);
+  const res = await fetch(API_URL, { method:"POST", body });
+
+  const text = await res.text();
+  try{
+    return JSON.parse(text);
+  }catch(e){
+    return { ok:false, error: "API ไม่คืนค่า JSON: " + text.slice(0,200) };
   }
+}
+
 
   // ===== Edit flow =====
   function openEdit(item){
@@ -550,4 +557,5 @@
 </script>
 </body>
 </html>
+
 
