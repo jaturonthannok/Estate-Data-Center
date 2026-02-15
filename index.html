@@ -21,6 +21,41 @@
   </header>
 
   <div class="controls">
+    <div style="padding:10px; border-top:1px solid #ddd;">
+  <h3>ลงประกาศขาย (ต้องรออนุมัติ)</h3>
+
+  <form id="sellForm" style="display:grid; gap:8px; max-width:520px;">
+    <input id="fullName" placeholder="ชื่อ (หรือชื่อ-นามสกุล)" required />
+    <input id="contact" placeholder="เบอร์โทรหรือไลน์ (เช่น 089xxxxxxx หรือ Line: abc)" required />
+
+    <select id="province" required></select>
+
+    <select id="type" required>
+      <option value="">เลือกประเภท</option>
+      <option value="land">ที่ดิน</option>
+      <option value="house">บ้าน</option>
+      <option value="condo">คอนโด</option>
+    </select>
+
+    <input id="title" placeholder="หัวข้อประกาศ เช่น ที่ดินติดถนน" required />
+    <input id="price" type="number" placeholder="ราคา (บาท)" required />
+
+    <input id="lat" placeholder="ละติจูด (lat) เช่น 13.7367 (ไม่ใส่ก็ได้)" />
+    <input id="lng" placeholder="ลองจิจูด (lng) เช่น 100.5231 (ไม่ใส่ก็ได้)" />
+
+    <textarea id="detail" placeholder="รายละเอียด (ขนาด, ทำเล, จุดเด่น)"></textarea>
+
+    <label style="display:flex; gap:8px; align-items:center;">
+      <input type="checkbox" id="consent" required />
+      ยินยอมให้เผยแพร่ “ข้อมูลประกาศ + ช่องทางติดต่อ” บนเว็บไซต์
+    </label>
+
+    <button type="submit">ส่งประกาศ</button>
+  </form>
+
+  <p id="formMsg" style="margin-top:8px;"></p>
+</div>
+
     <select id="provinceSelect">
       <option value="">ทุกจังหวัด</option>
     </select>
@@ -113,6 +148,99 @@
     }
 
     loadListings();
+    const PROVINCES_TH = [
+  "กรุงเทพมหานคร","กระบี่","กาญจนบุรี","กาฬสินธุ์","กำแพงเพชร","ขอนแก่น","จันทบุรี","ฉะเชิงเทรา",
+  "ชลบุรี","ชัยนาท","ชัยภูมิ","ชุมพร","เชียงราย","เชียงใหม่","ตรัง","ตราด","ตาก","นครนายก",
+  "นครปฐม","นครพนม","นครราชสีมา","นครศรีธรรมราช","นครสวรรค์","นนทบุรี","นราธิวาส","น่าน",
+  "บึงกาฬ","บุรีรัมย์","ปทุมธานี","ประจวบคีรีขันธ์","ปราจีนบุรี","ปัตตานี","พระนครศรีอยุธยา",
+  "พะเยา","พังงา","พัทลุง","พิจิตร","พิษณุโลก","เพชรบุรี","เพชรบูรณ์","แพร่","ภูเก็ต","มหาสารคาม",
+  "มุกดาหาร","แม่ฮ่องสอน","ยโสธร","ยะลา","ร้อยเอ็ด","ระนอง","ระยอง","ราชบุรี","ลพบุรี","ลำปาง",
+  "ลำพูน","เลย","ศรีสะเกษ","สกลนคร","สงขลา","สตูล","สมุทรปราการ","สมุทรสงคราม","สมุทรสาคร",
+  "สระแก้ว","สระบุรี","สิงห์บุรี","สุโขทัย","สุพรรณบุรี","สุราษฎร์ธานี","สุรินทร์","หนองคาย",
+  "หนองบัวลำภู","อ่างทอง","อำนาจเจริญ","อุดรธานี","อุตรดิตถ์","อุทัยธานี","อุบลราชธานี"
+];
+
+function fillProvinces(){
+  const sel = document.getElementById('province');
+  if(!sel) return;
+  sel.innerHTML = `<option value="">เลือกจังหวัด</option>`;
+  PROVINCES_TH.forEach(p=>{
+    const opt = document.createElement('option');
+    opt.value = p;
+    opt.textContent = p;
+    sel.appendChild(opt);
+  });
+}
+
+async function loadApprovedFromSheet(){
+  const res = await fetch(`${API_URL}?status=APPROVED`);
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "โหลดข้อมูลไม่สำเร็จ");
+  return data.listings || [];
+}
+
+async function submitToSheet(payload){
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(payload)
+  });
+  return await res.json();
+}
+
+document.addEventListener("DOMContentLoaded", async ()=>{
+  fillProvinces();
+
+  // โหลดข้อมูลเดิมจาก listings.json
+  await loadListings();
+
+  // โหลดข้อมูลที่ APPROVED จาก Google Sheet แล้วรวมแสดง
+  try{
+    const approved = await loadApprovedFromSheet();
+    const merged = [...approved, ...allListings];
+    render(merged);
+  }catch(err){
+    console.log(err);
+    render(allListings);
+  }
+
+  const form = document.getElementById("sellForm");
+  if(form){
+    form.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const msg = document.getElementById("formMsg");
+      msg.textContent = "กำลังส่ง...";
+
+      const payload = {
+        full_name: document.getElementById("fullName").value.trim(),
+        contact: document.getElementById("contact").value.trim(),
+        province: document.getElementById("province").value,
+        type: document.getElementById("type").value,
+        title: document.getElementById("title").value.trim(),
+        price: document.getElementById("price").value,
+        lat: document.getElementById("lat").value.trim(),
+        lng: document.getElementById("lng").value.trim(),
+        detail: document.getElementById("detail").value.trim()
+      };
+
+      try{
+        const r = await submitToSheet(payload);
+        if(r.ok){
+          msg.textContent = "ส่งประกาศแล้ว ✅ รออนุมัติ ก่อนขึ้นหน้าเว็บ";
+          form.reset();
+          fillProvinces();
+        }else{
+          msg.textContent = "ส่งไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ");
+        }
+      }catch(err){
+        msg.textContent = "ส่งไม่สำเร็จ: " + err.message;
+      }
+    });
+  }
+});
+
+    const API_URL = "https://script.google.com/macros/s/AKfycbzuKt4qWsyJfTYYLJf4BNUmztBo-jFV7a2vCULgJ2SuzOWOxHII94gJQzTANBP4G0b00w/exec";
   </script>
 </body>
 </html>
+
