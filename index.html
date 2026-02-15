@@ -314,90 +314,117 @@ function normalizeDriveImageUrl(u){
 
 
   function render(list){
-    markers.clearLayers();
-    const container = document.getElementById('listings');
-    container.innerHTML = '';
+  markers.clearLayers();
+  const container = document.getElementById('listings');
+  container.innerHTML = '';
 
-    if(!list || list.length === 0){
-      container.innerHTML = '<i class="small">ไม่มีรายการ</i>';
-      return;
+  if(!list || list.length === 0){
+    container.innerHTML = '<i class="small">ไม่มีรายการ</i>';
+    return;
+  }
+
+  list.forEach(item=>{
+    const contact = item.contact || item.phone || '';
+    const priceText = item.price ? '฿' + Number(item.price).toLocaleString() : '-';
+    const images = parseImages(item.images);
+
+    // ===== MAP MARKER =====
+    if(item.lat && item.lng){
+      const m = L.marker([Number(item.lat), Number(item.lng)]).addTo(markers);
+      m.bindPopup(`<b>${item.title || '-'}</b><br>${item.province || '-'} • ${item.type || '-'}<br>ราคา: ${priceText}`);
     }
 
-    list.forEach(item=>{
-      const contact = item.contact || item.phone || '';
-      const priceText = item.price ? '฿' + Number(item.price).toLocaleString() : '-';
-      const images = parseImages(item.images);
+    // ===== CARD =====
+    const card = document.createElement('div');
+    card.className = 'card-item';
 
-      if(item.lat && item.lng){
-        const m = L.marker([Number(item.lat), Number(item.lng)]).addTo(markers);
-        m.bindPopup(`<b>${item.title || '-'}</b><br>${item.province || '-'} • ${item.type || '-'}<br>ราคา: ${priceText}`);
-      }
+    // thumbs html
+    const thumbsHtml = images.slice(0,8).map((u,idx)=>`
+      <img class="thumb" src="${u}" referrerpolicy="no-referrer"
+           onerror="this.style.display='none'"
+           alt="img" data-idx="${idx}" />
+    `).join("");
 
-      const card = document.createElement('div');
-      card.className = 'card-item';
+    card.innerHTML = `
+      <b>${item.title || '-'}</b>
+      <div class="meta">${item.province || '-'} • ${item.type || '-'} • ราคา: ${priceText}</div>
 
-      const thumbs = images.slice(0,8).map((u,idx)=>`<img class="thumb" src="${u}" referrerpolicy="no-referrer" onerror="this.style.display='none'" ...
-" alt="img" data-idx="${idx}" />`).join("");
+      ${item.detail ? `<div style="margin-top:8px;">${item.detail}</div>` : ``}
 
-      card.innerHTML = `
-        <b>${item.title || '-'}</b>
-        <div class="meta">${item.province || '-'} • ${item.type || '-'} • ราคา: ${priceText}</div>
-        ${item.detail ? `<div style="margin-top:8px;">${item.detail}</div>` : ``}
-        ${images.length ? `<div class="thumbs">${thumbs}</div>` : ``}
-        <div class="actions">
-  ${contact ? `<span class="contact-badge">ติดต่อ: <b>${contact}</b></span>` : `<span class="small">ยังไม่มีช่องทางติดต่อ</span>`}
-  <button class="btn btn-ghost btn-edit" type="button">แก้ไข</button>
-  <button class="btn btn-ghost btn-del" type="button">ลบ</button>
-</div>
+      ${images.length ? `<div class="thumbs">${thumbsHtml}</div>` : ``}
 
-card.querySelector(".btn-del").addEventListener("click", async ()=>{
-  if(!confirm("ต้องการลบประกาศนี้ใช่ไหม?")) return;
+      <div class="actions">
+        ${contact
+          ? `<span class="contact-badge">ติดต่อ: <b>${contact}</b></span>`
+          : `<span class="small">ยังไม่มีช่องทางติดต่อ</span>`
+        }
 
-  const confirmContact = prompt("เพื่อความปลอดภัย กรุณาพิมพ์ เบอร์/ไลน์ ให้ตรงกับที่ลงประกาศไว้");
-  if(!confirmContact) return;
+        <button class="btn btn-ghost btn-edit" type="button">แก้ไข</button>
+        <button class="btn btn-ghost btn-del" type="button">ลบ</button>
+      </div>
+    `;
 
-  const msg = document.getElementById("formMsg");
-  if(msg) msg.textContent = "กำลังลบ...";
+    // ใส่การ์ดลงหน้าเว็บก่อน
+    container.appendChild(card);
 
-  const r = await submitToSheet({
-    mode: "delete",
-    id: item.id,
-    confirm_contact: confirmContact.trim()
-  });
-
-  if(r.ok){
-    if(msg) msg.textContent = "ลบแล้ว ✅";
-    // โหลดรายการใหม่
-    try{
-      approvedListings = await loadApprovedFromSheet();
-    }catch(e){ approvedListings = []; }
-    const merged = [...approvedListings, ...allListings];
-    populateProvinceOptionsFrom(merged);
-    render(merged);
-  }else{
-    if(msg) msg.textContent = "ลบไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ");
-    alert("ลบไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ"));
-  }
-});
-
-      `;
-
-      if(images.length){
-        card.querySelectorAll(".thumb").forEach(img=>{
-          img.addEventListener("click", ()=>{
-            const idx = Number(img.getAttribute("data-idx") || "0");
-            openGallery(images, idx);
-          });
+    // ===== THUMB CLICK -> OPEN GALLERY =====
+    if(images.length){
+      card.querySelectorAll(".thumb").forEach(img=>{
+        img.addEventListener("click", ()=>{
+          const idx = Number(img.getAttribute("data-idx") || "0");
+          openGallery(images, idx);
         });
-      }
-
-      card.querySelector(".btn-edit").addEventListener("click", ()=>{
-        openEdit(item);
       });
+    }
 
-      container.appendChild(card);
+    // ===== EDIT BUTTON =====
+    card.querySelector(".btn-edit").addEventListener("click", ()=>{
+      openEdit(item); // ใช้ฟังก์ชัน openEdit เดิมของคุณ
     });
-  }
+
+    // ===== DELETE BUTTON =====
+    card.querySelector(".btn-del").addEventListener("click", async ()=>{
+      if(!confirm("ต้องการลบประกาศนี้ใช่ไหม?")) return;
+
+      const confirmContact = prompt("พิมพ์เบอร์/ไลน์เพื่อยืนยัน (ต้องตรงกับที่ลงประกาศไว้)");
+      if(!confirmContact) return;
+
+      const msg = document.getElementById("formMsg");
+      if(msg) msg.textContent = "กำลังลบ...";
+
+      try{
+        const r = await submitToSheet({
+          mode:"delete",
+          id: item.id,
+          confirm_contact: confirmContact.trim()
+        });
+
+        if(r.ok){
+          if(msg) msg.textContent = "ลบแล้ว ✅";
+
+          // โหลดรายการใหม่จากชีต
+          try{
+            approvedListings = await loadApprovedFromSheet();
+          }catch(e){
+            approvedListings = [];
+          }
+
+          const merged = [...approvedListings, ...allListings];
+          populateProvinceOptionsFrom(merged);
+          render(merged);
+
+        }else{
+          if(msg) msg.textContent = "ลบไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ");
+          alert("ลบไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ"));
+        }
+      }catch(err){
+        if(msg) msg.textContent = "ลบไม่สำเร็จ: " + err.message;
+        alert("ลบไม่สำเร็จ: " + err.message);
+      }
+    });
+  });
+}
+
 
   // ===== Filters =====
   function applyFilters(){
@@ -610,6 +637,7 @@ card.querySelector(".btn-del").addEventListener("click", async ()=>{
 </script>
 </body>
 </html>
+
 
 
 
