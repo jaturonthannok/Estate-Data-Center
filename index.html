@@ -493,7 +493,7 @@ function normalizeDriveImageUrl(u){
   document.getElementById("galleryClose").onclick = ()=> galleryModal.style.display="none";
 
   // ===== Submit to Sheet (form-urlencoded to avoid Failed to fetch) =====
-  async function submitToSheet(payload){
+  async function (payload){
   const body = new URLSearchParams(payload);
   const res = await fetch(API_URL, { method:"POST", body });
 
@@ -637,6 +637,7 @@ function normalizeDriveImageUrl(u){
 </script>
 </body>
 </html>
+
 
 
 
