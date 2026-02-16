@@ -5,90 +5,238 @@
   <title>Estate-Data-Center</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
   <style>
     :root{
       --bg:#f6f8fb; --card:#ffffff; --text:#0f172a; --muted:#64748b;
       --border:#e2e8f0; --primary:#0b74de; --primary2:#095db1; --radius:14px;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai","Noto Sans",sans-serif;background:var(--bg);color:var(--text);}
-    header{background:linear-gradient(90deg,var(--primary),var(--primary2));color:#fff;padding:18px 16px;position:sticky;top:0;z-index:10;box-shadow:0 8px 20px rgba(2,6,23,.08);}
-    header .title{max-width:1100px;margin:0 auto;font-size:20px;font-weight:800;text-align:center;}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai","Noto Sans",sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    header{
+      background:linear-gradient(90deg,var(--primary),var(--primary2));
+      color:#fff;
+      padding:16px 12px;
+      position:sticky; top:0; z-index:10;
+      box-shadow:0 8px 20px rgba(2,6,23,.08);
+    }
+    header .title{
+      max-width:1100px; margin:0 auto;
+      font-size:18px; font-weight:800;
+      text-align:center;
+      line-height:1.2;
+    }
 
-    .container{max-width:1100px;margin:16px auto;padding:0 12px 24px;display:grid;grid-template-columns:360px 1fr;gap:14px;}
-    @media (max-width:900px){.container{grid-template-columns:1fr}}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 10px 25px rgba(2,6,23,.06);overflow:hidden;}
-    .card .card-h{padding:12px 14px;border-bottom:1px solid var(--border);font-weight:800;}
+    .container{
+      max-width:1100px;
+      margin:16px auto;
+      padding:0 12px 24px;
+      display:grid;
+      grid-template-columns: 360px 1fr;
+      gap:14px;
+    }
+    @media (max-width: 900px){
+      .container{grid-template-columns:1fr}
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:0 10px 25px rgba(2,6,23,.06);
+      overflow:hidden;
+    }
+    .card .card-h{
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      font-weight:800;
+    }
     .card .card-b{padding:14px;}
-    label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
-    input,select,textarea{width:100%;border:1px solid var(--border);background:#fff;border-radius:10px;padding:10px 10px;font-size:14px;outline:none}
-    textarea{min-height:84px;resize:vertical}
-    input:focus,select:focus,textarea:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(59,130,246,.15)}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width:900px){.row{grid-template-columns:1fr}}
 
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:700}
-    .btn-primary{background:#1d4ed8;color:#fff}
+    label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
+    input, select, textarea{
+      width:100%;
+      border:1px solid var(--border);
+      background:#fff;
+      border-radius:10px;
+      padding:10px 10px;
+      font-size:14px;
+      outline:none;
+    }
+    textarea{min-height:84px; resize:vertical}
+    input:focus, select:focus, textarea:focus{
+      border-color:#93c5fd;
+      box-shadow:0 0 0 3px rgba(59,130,246,.15);
+    }
+
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    @media (max-width: 900px){ .row{grid-template-columns:1fr} }
+
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:8px;
+      border:0;
+      padding:10px 12px;
+      border-radius:10px;
+      cursor:pointer;
+      font-weight:700;
+      user-select:none;
+    }
+    .btn-primary{background:#1d4ed8; color:#fff}
     .btn-primary:hover{background:#1e40af}
-    .btn-ghost{background:#eef2ff;color:#1e3a8a}
+    .btn-ghost{background:#eef2ff; color:#1e3a8a}
     .btn-ghost:hover{background:#e0e7ff}
-    .small{font-size:12px;color:var(--muted)}
+    .btn-danger{background:#fee2e2; color:#991b1b}
+    .btn-danger:hover{background:#fecaca}
+    .small{font-size:12px; color:var(--muted)}
+    .consent{display:flex; gap:10px; align-items:flex-start; font-size:12px; color:var(--muted);}
+    .consent input{width:auto; margin-top:2px}
 
-    .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-    .filters > *{flex:1;min-width:160px}
+    .filters{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .filters > *{flex:1; min-width:160px}
     .filters .btn{flex:0}
 
-    #listings .card-item{border:1px solid var(--border);border-radius:12px;padding:12px;margin-top:10px;background:#fff}
+    #listings .card-item{
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:12px;
+      margin-top:10px;
+      background:#fff;
+    }
     #listings .card-item b{font-size:15px}
-    #listings .meta{color:var(--muted);font-size:12px;margin-top:4px}
-    #listings .actions{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    #listings .meta{color:var(--muted); font-size:12px; margin-top:4px}
+    #listings .actions{margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center}
 
-    .contact-badge{
-      display:inline-block;background:#16a34a;color:#ffffff;
-      padding:6px 12px;border-radius:10px;font-size:13px;font-weight:800;
-    }
-
-    .status-badge{
-      display:inline-block;
-      padding:5px 10px;
-      border-radius:999px;
-      font-size:12px;
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:10px;
+      font-size:13px;
       font-weight:800;
-      color:#fff;
-      margin-left:8px;
+      white-space:nowrap;
     }
-    .st-available{background:#16a34a;}
-    .st-sold{background:#ef4444;}
-    .st-reserved{background:#f59e0b;}
+    .badge-contact{background:#16a34a; color:#ffffff;}
+    .badge-sold{background:#64748b; color:#ffffff;}
+    .badge-avail{background:#16a34a; color:#ffffff;}
 
-    .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .thumb{width:90px;height:110px;border-radius:10px;object-fit:cover;border:1px solid var(--border);cursor:pointer}
+    .thumbs{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+    .thumb{
+      width:78px; height:78px;
+      border-radius:10px;
+      object-fit:cover;
+      border:1px solid var(--border);
+      cursor:pointer;
+      background:#f1f5f9;
+    }
 
-    .map-wrap{max-width:1100px;margin:0 auto 24px;padding:0 12px;}
-    #map{height:420px;border-radius:var(--radius);border:1px solid var(--border);box-shadow:0 10px 25px rgba(2,6,23,.06);overflow:hidden;}
-    .consent{display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--muted);}
-    .consent input{width:auto;margin-top:2px}
+    .map-wrap{max-width:1100px; margin:0 auto 24px; padding:0 12px;}
+    #map{
+      height:420px;
+      border-radius:var(--radius);
+      border:1px solid var(--border);
+      box-shadow:0 10px 25px rgba(2,6,23,.06);
+      overflow:hidden;
+    }
 
-    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,.55);display:none;align-items:center;justify-content:center;z-index:9999;}
-    .modal{width:min(820px,92vw);background:#fff;border-radius:14px;border:1px solid var(--border);box-shadow:0 20px 60px rgba(2,6,23,.25);overflow:hidden;}
-    .modal-h{padding:12px 14px;font-weight:800;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+    .modal-backdrop{
+      position:fixed; inset:0;
+      background:rgba(2,6,23,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      padding:14px;
+    }
+    .modal{
+      width:min(820px, 94vw);
+      background:#fff;
+      border-radius:14px;
+      border:1px solid var(--border);
+      box-shadow:0 20px 60px rgba(2,6,23,.25);
+      overflow:hidden;
+    }
+    .modal-h{
+      padding:12px 14px;
+      font-weight:800;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+    }
     .modal-b{padding:14px}
-    .modal-x{border:0;background:transparent;font-size:18px;cursor:pointer}
-    .gallery-img{width:100%;max-height:70vh;object-fit:contain;background:#0b1220}
+    .modal-x{border:0; background:transparent; font-size:18px; cursor:pointer}
+    .gallery-img{
+      width:100%;
+      max-height:70vh;
+      object-fit:contain;
+      background:#0b1220;
+      border-radius:12px;
+    }
+
+    .img-box{
+      border:1px dashed var(--border);
+      border-radius:12px;
+      padding:12px;
+      background:#fff;
+      cursor:pointer;
+    }
+    .img-box:hover{
+      border-color:#93c5fd;
+      box-shadow:0 0 0 3px rgba(59,130,246,.12)
+    }
+
+    .login-row{
+      max-width:1100px;
+      margin:10px auto 0;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .login-status{
+      font-size:12px;
+      opacity:0.95;
+      background:rgba(255,255,255,.15);
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.25);
+    }
   </style>
 </head>
 
 <body>
 <header>
   <div class="title">Estate-Data-Center • รวมประกาศอสังหา (ทดลอง)</div>
+  <div class="login-row">
+    <div class="login-status" id="loginStatus">ยังไม่ได้ล็อกอิน</div>
+    <button class="btn btn-ghost" id="logoutBtn" type="button" style="display:none;">ออกจากระบบ</button>
+    <div id="gSignIn"></div>
+  </div>
 </header>
 
 <div class="container">
-  <!-- LEFT -->
+
   <div class="card">
     <div class="card-h">ลงประกาศขาย (ต้องรออนุมัติ)</div>
     <div class="card-b">
-      <form id="sellForm" style="display:grid;gap:10px;">
+      <form id="sellForm" style="display:grid; gap:10px;">
+
+        <input type="hidden" id="editing_id" value="" />
+        <input type="hidden" id="images" value="[]"/>
+
         <div>
           <label>ชื่อ (หรือชื่อ-นามสกุล)</label>
           <input id="fullName" placeholder="ชื่อ-นามสกุล" required />
@@ -141,34 +289,35 @@
 
         <div>
           <label>สถานะทรัพย์</label>
-          <select id="property_status">
+          <select id="sold_status" required>
             <option value="ยังไม่ขาย">ยังไม่ขาย</option>
-            <option value="จองแล้ว">จองแล้ว</option>
             <option value="ขายแล้ว">ขายแล้ว</option>
           </select>
         </div>
 
-        <!-- images -->
-        <input type="hidden" id="images" value="[]"/>
-        <button class="btn btn-ghost" id="imagesBtn" type="button">เพิ่มรูปภาพ (วางลิงก์หลายบรรทัด)</button>
-        <div class="small" id="imgCount">ยังไม่เลือกรูป</div>
+        <div class="img-box" id="imgBox" role="button" tabindex="0">
+          รูปภาพ (กดเพื่อใส่/แก้ไขลิงก์รูป)
+          <div class="small" id="imgCount">ยังไม่เลือกรูป</div>
+        </div>
+
+        <button class="btn btn-ghost" id="pasteLinkBtn" type="button">ใส่ลิงก์รูปเอง</button>
 
         <label class="consent">
           <input type="checkbox" id="consent" required />
           <span>ยินยอมให้เผยแพร่ “ข้อมูลประกาศ + ช่องทางติดต่อ” บนเว็บไซต์</span>
         </label>
 
-        <button class="btn btn-primary" type="submit">ส่งประกาศ</button>
+        <button class="btn btn-primary" type="submit" id="submitBtn">ส่งประกาศ</button>
         <div id="formMsg" class="small"></div>
 
-        <div class="small" style="margin-top:6px;">
-          * ส่งแล้วจะเป็น <b>PENDING</b> ในชีต → คุณเปลี่ยนเป็น <b>APPROVED</b> เพื่อให้ขึ้นหน้าเว็บ
+        <div class="small">
+          * ส่งแล้วจะเป็น <b>PENDING</b> ในชีต → คุณค่อยเปลี่ยนเป็น <b>APPROVED</b> เพื่อให้ขึ้นหน้าเว็บ  
+          <br>* ถ้าแก้ไข จะอัปเดต “โพสต์เดิม” และกลับเป็น <b>PENDING</b> เพื่ออนุมัติใหม่
         </div>
       </form>
     </div>
   </div>
 
-  <!-- RIGHT -->
   <div class="card">
     <div class="card-h">ค้นหาและดูรายการ</div>
     <div class="card-b">
@@ -180,10 +329,9 @@
           <option value="house">บ้าน</option>
           <option value="condo">คอนโด</option>
         </select>
-        <select id="saleSelect">
+        <select id="soldSelect">
           <option value="">ทุกสถานะ</option>
           <option value="ยังไม่ขาย">ยังไม่ขาย</option>
-          <option value="จองแล้ว">จองแล้ว</option>
           <option value="ขายแล้ว">ขายแล้ว</option>
         </select>
         <input id="searchInput" placeholder="ค้นหา เช่น ชื่อประกาศ / เบอร์ / จังหวัด" />
@@ -199,24 +347,25 @@
   <div id="map"></div>
 </div>
 
-<!-- Modal: Images -->
 <div class="modal-backdrop" id="imgModal">
   <div class="modal">
     <div class="modal-h">
-      <div>ใส่ลิงก์รูป (1 บรรทัดต่อ 1 รูป)</div>
+      <div>เพิ่มรูปภาพ (ใส่ลิงก์รูปทีละบรรทัด)</div>
       <button class="modal-x" id="imgModalClose">✕</button>
     </div>
     <div class="modal-b">
-      <textarea id="imgUrls" placeholder="วางลิงก์รูป 1 บรรทัดต่อ 1 รูป (ต้องเปิดสาธารณะ jpg/png/webp)"></textarea>
+      <textarea id="imgUrls" placeholder="วางลิงก์รูป 1 บรรทัดต่อ 1 รูป"></textarea>
       <div style="margin-top:10px;display:flex;gap:10px;justify-content:flex-end;">
         <button class="btn btn-ghost" id="imgModalCancel" type="button">ยกเลิก</button>
         <button class="btn btn-primary" id="imgModalSave" type="button">บันทึก</button>
+      </div>
+      <div class="small" style="margin-top:10px;">
+        * ต้องเป็นลิงก์รูปที่เปิดสาธารณะ (jpg/png/webp)
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal: Gallery -->
 <div class="modal-backdrop" id="galleryModal">
   <div class="modal">
     <div class="modal-h">
@@ -230,10 +379,11 @@
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script>
-  // ===== ใส่ URL /exec ของคุณตรงนี้ =====
   const API_URL = "https://script.google.com/macros/s/AKfycbwybvSikdUzvuwOHTJM9W9Zq3JNWJ8RLbm-pH6lW04YGVVmBJqaIXUDpr1dUnnCUseVgw/exec";
+  const GOOGLE_CLIENT_ID = "86449545414-but5pc5o9ocri2eurd016aaolfpktbh9.apps.googleusercontent.com";
 
   const PROVINCES_TH = [
     "กรุงเทพมหานคร","กระบี่","กาญจนบุรี","กาฬสินธุ์","กำแพงเพชร","ขอนแก่น","จันทบุรี","ฉะเชิงเทรา",
@@ -247,12 +397,36 @@
     "หนองบัวลำภู","อ่างทอง","อำนาจเจริญ","อุดรธานี","อุตรดิตถ์","อุทัยธานี","อุบลราชธานี"
   ];
 
-  // ===== Map =====
-  let map = L.map('map').setView([13.7367, 100.5231], 5);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
-  let markers = L.layerGroup().addTo(map);
-
+  let currentUser = null; // {email, id_token}
+  let allListings = [];
   let approvedListings = [];
+
+  let map, markers;
+  function initMap(){
+    map = L.map('map').setView([13.7367, 100.5231], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+    markers = L.layerGroup().addTo(map);
+  }
+
+  function updateLoginStatus(){
+    const el = document.getElementById("loginStatus");
+    const outBtn = document.getElementById("logoutBtn");
+    if(currentUser?.email){
+      el.textContent = "ล็อกอินแล้ว: " + currentUser.email;
+      outBtn.style.display = "";
+    }else{
+      el.textContent = "ยังไม่ได้ล็อกอิน";
+      outBtn.style.display = "none";
+    }
+  }
+
+  document.getElementById("logoutBtn").addEventListener("click", ()=>{
+    currentUser = null;
+    localStorage.removeItem("id_token");
+    updateLoginStatus();
+    renderMerged();
+    alert("ออกจากระบบแล้ว");
+  });
 
   function fillProvinces(){
     const sel = document.getElementById('province');
@@ -268,7 +442,7 @@
   function populateProvinceOptionsFrom(list){
     const sel = document.getElementById('provinceSelect');
     sel.innerHTML = `<option value="">ทุกจังหวัด</option>`;
-    const set = new Set((list||[]).map(l => l.province).filter(Boolean));
+    const set = new Set(list.map(l => l.province).filter(Boolean));
     [...set].sort().forEach(p=>{
       const opt = document.createElement('option');
       opt.value = p;
@@ -277,100 +451,128 @@
     });
   }
 
-  function parseImages(x){
-    try{
-      const arr = Array.isArray(x) ? x : (typeof x === "string" ? JSON.parse(x || "[]") : []);
-      return (arr || []).map(s=>String(s).trim()).filter(Boolean);
-    }catch(e){
-      return [];
-    }
+  function canManage(item){
+    return currentUser?.email && String(item.owner_email||"").trim() === currentUser.email;
   }
 
-  function statusClass_(v){
-    if(v === "ขายแล้ว") return "st-sold";
-    if(v === "จองแล้ว") return "st-reserved";
-    return "st-available";
+  function parseImages(x){
+    try{
+      if(Array.isArray(x)) return x.map(s=>String(s).trim()).filter(Boolean);
+      if(typeof x === "string") return JSON.parse(x || "[]").map(s=>String(s).trim()).filter(Boolean);
+      return [];
+    }catch(e){ return []; }
+  }
+
+  function setImages(arr){
+    const clean = (arr || []).map(s=>String(s).trim()).filter(Boolean);
+    document.getElementById("images").value = JSON.stringify(clean);
+    document.getElementById("imgCount").textContent = clean.length ? `เลือกรูปแล้ว ${clean.length} รูป` : "ยังไม่เลือกรูป";
+  }
+  function getImages(){
+    try{ return JSON.parse(document.getElementById("images").value || "[]"); }
+    catch(e){ return []; }
+  }
+
+  async function loadLocalListings(){
+    try{
+      const res = await fetch("listings.json");
+      allListings = await res.json();
+      if(!Array.isArray(allListings)) allListings = [];
+    }catch(e){ allListings = []; }
   }
 
   async function loadApprovedFromSheet(){
     const res = await fetch(`${API_URL}?status=APPROVED`);
     const data = await res.json();
     if(!data.ok) throw new Error(data.error || "โหลดข้อมูลไม่สำเร็จ");
-    return data.listings || [];
+    approvedListings = (data.listings || []).filter(x => String(x.status||"").toUpperCase() !== "DELETED");
   }
 
-  // สำคัญ: ส่งแบบ x-www-form-urlencoded (กันปัญหา JSON)
+  function mergedListings(){
+    return [...approvedListings, ...allListings].filter(x => String(x.status||"").toUpperCase() !== "DELETED");
+  }
+  function renderMerged(){
+    const merged = mergedListings();
+    populateProvinceOptionsFrom(merged);
+    render(merged);
+  }
+
   async function submitToSheet(payload){
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), 15000);
-
-    try{
-      const body = new URLSearchParams(payload);
-      const res = await fetch(API_URL, { method:"POST", body, signal: controller.signal });
-      const text = await res.text();
-
-      try{ return JSON.parse(text); }
-      catch{ return { ok:false, error:"API ไม่ใช่ JSON: " + text.slice(0,200) }; }
-
-    }catch(e){
-      if(e.name === "AbortError") return { ok:false, error:"API ไม่ตอบกลับภายใน 15 วิ" };
-      return { ok:false, error:e.message };
-    }finally{
-      clearTimeout(t);
+    if(!currentUser?.id_token){
+      alert("ต้องล็อกอินด้วย Gmail ก่อน");
+      throw new Error("not logged in");
     }
+    const body = new URLSearchParams({...payload, id_token: currentUser.id_token});
+    const res = await fetch(API_URL, { method:"POST", body });
+    const text = await res.text();
+    try{ return JSON.parse(text); }
+    catch(e){ return {ok:false, error:"API ไม่ได้ตอบ JSON: " + text.slice(0,200)}; }
   }
 
   function render(list){
     markers.clearLayers();
-    const container = document.getElementById('listings');
-    container.innerHTML = '';
+    const container = document.getElementById("listings");
+    container.innerHTML = "";
 
     if(!list || list.length === 0){
-      container.innerHTML = '<i class="small">ไม่มีรายการ</i>';
+      container.innerHTML = `<i class="small">ไม่มีรายการ</i>`;
       return;
     }
 
     list.forEach(item=>{
-      const contact = item.contact || "";
-      const priceText = item.price ? '฿' + Number(item.price).toLocaleString() : '-';
+      const priceText = item.price ? "฿" + Number(item.price).toLocaleString() : "-";
+      const contact = item.contact || "-";
+      const sold = (item.sold_status || "ยังไม่ขาย").trim();
       const images = parseImages(item.images);
-      const pStatus = (item.property_status || "ยังไม่ขาย").trim();
 
       if(item.lat && item.lng){
-        const m = L.marker([Number(item.lat), Number(item.lng)]).addTo(markers);
-        m.bindPopup(`<b>${item.title || '-'}</b><br>${item.province || '-'} • ${item.type || '-'}<br>ราคา: ${priceText}<br>สถานะ: ${pStatus}`);
+        const lat = Number(item.lat), lng = Number(item.lng);
+        if(!Number.isNaN(lat) && !Number.isNaN(lng)){
+          const m = L.marker([lat, lng]).addTo(markers);
+          m.bindPopup(`<b>${item.title || "-"}</b><br>${item.province || "-"} • ${item.type || "-"}<br>ราคา: ${priceText}`);
+        }
       }
 
-      const card = document.createElement('div');
-      card.className = 'card-item';
+      const card = document.createElement("div");
+      card.className = "card-item";
 
-      const thumbsHtml = images.slice(0,10).map((u,idx)=>`
-        <img class="thumb" src="${u}" referrerpolicy="no-referrer"
+      const thumbsHtml = images.slice(0,8).map((u,idx)=>`
+        <img class="thumb" src="${u}" alt="img"
+             referrerpolicy="no-referrer"
              onerror="this.style.display='none'"
-             alt="img" data-idx="${idx}" />
+             data-idx="${idx}">
       `).join("");
 
       card.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <b>${item.title || '-'}</b>
-          <span class="status-badge ${statusClass_(pStatus)}">${pStatus}</span>
+        <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;">
+          <b>${item.title || "-"}</b>
+          <span class="badge ${sold==="ขายแล้ว" ? "badge-sold" : "badge-avail"}">${sold}</span>
         </div>
 
-        <div class="meta">${item.province || '-'} • ${item.type || '-'} • ราคา: ${priceText}</div>
-
+        <div class="meta">${item.province || "-"} • ${item.type || "-"} • ราคา: ${priceText}</div>
         ${item.detail ? `<div style="margin-top:8px;">${item.detail}</div>` : ``}
         ${images.length ? `<div class="thumbs">${thumbsHtml}</div>` : ``}
 
         <div class="actions">
-          ${contact ? `<span class="contact-badge">ติดต่อ: <b>${contact}</b></span>` : `<span class="small">ยังไม่มีช่องทางติดต่อ</span>`}
-          <button class="btn btn-ghost btn-edit" type="button">แก้ไข</button>
-          <button class="btn btn-ghost btn-del" type="button">ลบ</button>
+          <span class="badge badge-contact">ติดต่อ: <b>${contact}</b></span>
+
+          ${
+            canManage(item)
+            ? `
+              <button class="btn btn-ghost btn-edit" type="button">แก้ไข</button>
+              <button class="btn btn-danger btn-del" type="button">ลบ</button>
+              <select class="btn btn-ghost btn-sold" style="padding:10px;border:1px solid #e2e8f0">
+                <option value="ยังไม่ขาย" ${sold==="ยังไม่ขาย"?"selected":""}>ยังไม่ขาย</option>
+                <option value="ขายแล้ว" ${sold==="ขายแล้ว"?"selected":""}>ขายแล้ว</option>
+              </select>
+            `
+            : `<span class="small">* ปุ่มแก้ไข/ลบจะเห็นเฉพาะเจ้าของโพสต์</span>`
+          }
         </div>
       `;
 
       container.appendChild(card);
 
-      // gallery
       if(images.length){
         card.querySelectorAll(".thumb").forEach(img=>{
           img.addEventListener("click", ()=>{
@@ -380,81 +582,99 @@
         });
       }
 
-      // edit = ส่งคำขอแก้ไข (PENDING_EDIT)
-      card.querySelector(".btn-edit").addEventListener("click", ()=>{
-        openEdit(item);
-      });
+      if(canManage(item)){
+        card.querySelector(".btn-edit").addEventListener("click", ()=>{
+          document.getElementById("editing_id").value = item.id || "";
+          document.getElementById("fullName").value = item.full_name || "";
+          document.getElementById("contact").value = item.contact || "";
+          document.getElementById("province").value = item.province || "";
+          document.getElementById("type").value = item.type || "";
+          document.getElementById("title").value = item.title || "";
+          document.getElementById("price").value = item.price || "";
+          document.getElementById("lat").value = item.lat || "";
+          document.getElementById("lng").value = item.lng || "";
+          document.getElementById("detail").value = item.detail || "";
+          document.getElementById("sold_status").value = item.sold_status || "ยังไม่ขาย";
+          setImages(parseImages(item.images));
+          document.getElementById("formMsg").textContent = "โหมดแก้ไข: กดส่งเพื่ออัปเดตโพสต์เดิม (จะกลับเป็น PENDING เพื่ออนุมัติใหม่)";
+          window.scrollTo({top:0, behavior:"smooth"});
+        });
 
-      // delete (soft delete)
-      card.querySelector(".btn-del").addEventListener("click", async ()=>{
-        if(!confirm("ต้องการลบประกาศนี้ใช่ไหม?")) return;
+        card.querySelector(".btn-del").addEventListener("click", async ()=>{
+          if(!confirm("ยืนยันลบโพสต์นี้?")) return;
+          const msg = document.getElementById("formMsg");
+          msg.textContent = "กำลังลบ...";
 
-        const confirmContact = prompt("พิมพ์เบอร์/ไลน์เพื่อยืนยัน (ต้องตรงกับที่ลงประกาศไว้)");
-        if(!confirmContact) return;
+          try{
+            const r = await submitToSheet({mode:"delete", id:item.id});
+            if(r.ok){
+              msg.textContent = "ลบแล้ว ✅";
+              await loadApprovedFromSheet();
+              renderMerged();
+            }else{
+              msg.textContent = "ลบไม่สำเร็จ: " + (r.error||"");
+              alert("ลบไม่สำเร็จ: " + (r.error||""));
+            }
+          }catch(err){
+            msg.textContent = "ลบไม่สำเร็จ: " + err.message;
+            alert("ลบไม่สำเร็จ: " + err.message);
+          }
+        });
 
-        const msg = document.getElementById("formMsg");
-        msg.textContent = "กำลังลบ...";
-
-        const r = await submitToSheet({ mode:"delete", id: item.id, confirm_contact: confirmContact.trim() });
-
-        if(r.ok){
-          msg.textContent = "ลบแล้ว ✅";
-          await reloadAndRender();
-        }else{
-          msg.textContent = "ลบไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ");
-          alert("ลบไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ"));
-        }
-      });
+        card.querySelector(".btn-sold").addEventListener("change", async (ev)=>{
+          try{
+            const sold_status = ev.target.value;
+            const r = await submitToSheet({mode:"sold", id:item.id, sold_status});
+            if(!r.ok) alert("อัปเดตสถานะไม่สำเร็จ: " + (r.error||""));
+            await loadApprovedFromSheet();
+            renderMerged();
+          }catch(err){
+            alert("อัปเดตสถานะไม่สำเร็จ: " + err.message);
+          }
+        });
+      }
     });
   }
 
   function applyFilters(){
     const prov = document.getElementById('provinceSelect').value.trim().toLowerCase();
     const type = document.getElementById('typeSelect').value;
-    const sale = document.getElementById('saleSelect').value;
+    const sold = document.getElementById('soldSelect').value;
     const q = document.getElementById('searchInput').value.trim().toLowerCase();
 
-    const filtered = (approvedListings || []).filter(i=>{
+    const merged = mergedListings();
+    const filtered = merged.filter(i=>{
       if(prov && (i.province||'').toLowerCase() !== prov) return false;
-      if(type && i.type !== type) return false;
-      if(sale && String(i.property_status||"ยังไม่ขาย").trim() !== sale) return false;
+      if(type && (i.type||'') !== type) return false;
+      if(sold && (i.sold_status||'ยังไม่ขาย') !== sold) return false;
       if(q){
-        const s = `${i.title} ${i.contact} ${i.province} ${i.type}`.toLowerCase();
+        const s = `${i.title} ${(i.contact||'')} ${i.province} ${i.type}`.toLowerCase();
         if(!s.includes(q)) return false;
       }
       return true;
     });
-
     render(filtered);
   }
 
   document.getElementById('provinceSelect').addEventListener('change', applyFilters);
   document.getElementById('typeSelect').addEventListener('change', applyFilters);
-  document.getElementById('saleSelect').addEventListener('change', applyFilters);
+  document.getElementById('soldSelect').addEventListener('change', applyFilters);
   document.getElementById('searchInput').addEventListener('input', applyFilters);
   document.getElementById('resetBtn').addEventListener('click', ()=>{
     document.getElementById('provinceSelect').value='';
     document.getElementById('typeSelect').value='';
-    document.getElementById('saleSelect').value='';
+    document.getElementById('soldSelect').value='';
     document.getElementById('searchInput').value='';
-    render(approvedListings);
+    renderMerged();
   });
-
-  // Images modal
-  function setImages(arr){
-    const clean = (arr || []).map(s=>String(s).trim()).filter(Boolean);
-    document.getElementById("images").value = JSON.stringify(clean);
-    document.getElementById("imgCount").textContent = clean.length ? `เลือกรูปแล้ว ${clean.length} รูป` : "ยังไม่เลือกรูป";
-  }
-  function getImages(){
-    try{ return JSON.parse(document.getElementById("images").value || "[]"); }catch(e){ return []; }
-  }
 
   const imgModal = document.getElementById("imgModal");
-  document.getElementById("imagesBtn").addEventListener("click", ()=>{
+  const openImgModal = ()=>{
     document.getElementById("imgUrls").value = getImages().join("\n");
     imgModal.style.display = "flex";
-  });
+  };
+  document.getElementById("imgBox").addEventListener("click", openImgModal);
+  document.getElementById("pasteLinkBtn").addEventListener("click", openImgModal);
   document.getElementById("imgModalClose").onclick = ()=> imgModal.style.display="none";
   document.getElementById("imgModalCancel").onclick = ()=> imgModal.style.display="none";
   document.getElementById("imgModalSave").onclick = ()=>{
@@ -463,7 +683,6 @@
     imgModal.style.display="none";
   };
 
-  // Gallery modal
   const galleryModal = document.getElementById("galleryModal");
   function openGallery(images, idx){
     document.getElementById("galleryImg").src = images[idx] || "";
@@ -471,36 +690,17 @@
   }
   document.getElementById("galleryClose").onclick = ()=> galleryModal.style.display="none";
 
-  // Edit
-  function openEdit(item){
-    document.getElementById("fullName").value = item.full_name || "";
-    document.getElementById("contact").value = item.contact || "";
-    document.getElementById("province").value = item.province || "";
-    document.getElementById("type").value = item.type || "";
-    document.getElementById("title").value = item.title || "";
-    document.getElementById("price").value = item.price || "";
-    document.getElementById("lat").value = item.lat || "";
-    document.getElementById("lng").value = item.lng || "";
-    document.getElementById("detail").value = item.detail || "";
-    document.getElementById("property_status").value = (item.property_status || "ยังไม่ขาย").trim();
-    setImages(parseImages(item.images));
-
-    window.__EDIT_MODE__ = { original_id: item.id };
-    document.getElementById("formMsg").textContent = "โหมดแก้ไข: จะส่งเป็นคำขอแก้ไขและรออนุมัติ (PENDING_EDIT)";
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  // Submit
   document.getElementById("sellForm").addEventListener("submit", async (e)=>{
     e.preventDefault();
     const msg = document.getElementById("formMsg");
     msg.textContent = "กำลังส่ง...";
 
-    if(!document.getElementById("consent").checked){
-      msg.textContent = "กรุณาติ๊กยินยอมก่อน";
+    if(!currentUser?.id_token){
+      msg.textContent = "ต้องล็อกอินด้วย Gmail ก่อน";
       return;
     }
 
+    const id = document.getElementById("editing_id").value.trim();
     const payload = {
       full_name: document.getElementById("fullName").value.trim(),
       contact: document.getElementById("contact").value.trim(),
@@ -512,341 +712,48 @@
       lng: document.getElementById("lng").value.trim(),
       detail: document.getElementById("detail").value.trim(),
       images: document.getElementById("images").value,
-      property_status: document.getElementById("property_status").value
+      sold_status: document.getElementById("sold_status").value
     };
-
-    if(window.__EDIT_MODE__?.original_id){
-      payload.mode = "edit";
-      payload.id = window.__EDIT_MODE__.original_id; // ใช้ id เดิมเพื่ออ้างอิง
-    }
-
-    const r = await submitToSheet(payload);
-
-    if(r.ok){
-      msg.textContent = window.__EDIT_MODE__ ? "ส่งคำขอแก้ไขแล้ว ✅ รออนุมัติ (PENDING_EDIT)" : "ส่งประกาศแล้ว ✅ รออนุมัติ (PENDING)";
-      e.target.reset();
-      fillProvinces();
-      setImages([]);
-      window.__EDIT_MODE__ = null;
-    }else{
-      msg.textContent = "ส่งไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ");
-    }
-  });
-
-  async function reloadAndRender(){
-    approvedListings = await loadApprovedFromSheet();
-    populateProvinceOptionsFrom(approvedListings);
-    render(approvedListings);
-  }
-
-  // Init
-  (async function init(){
-    fillProvinces();
-    setImages([]);
 
     try{
-      await reloadAndRender();
-    }catch(e){
-      document.getElementById("listings").innerHTML = `<div class="small">โหลดข้อมูลไม่สำเร็จ: ${e.message}</div>`;
-    }
-  })();
-</script>
-  
-<!-- Google Sign-In (GIS) -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+      let r;
+      if(id) r = await submitToSheet({mode:"update", id, ...payload});
+      else r = await submitToSheet({mode:"create", ...payload});
 
-<script>
-  const API_URL = "ใส่-URL-เว็บแอป-ของคุณ/exec";  // <<<< สำคัญ
-  const GOOGLE_CLIENT_ID = "86449545414-but5pc5o9ocri2eurd016aaolfpktbh9.apps.googleusercontent.com";
-
-  let currentUser = null; // {email, id_token}
-
-  // ===== UI Login =====
-  function mountLoginUI(){
-    // สร้างปุ่ม login ง่ายๆ บน header
-    const header = document.querySelector("header .title");
-    if(!header) return;
-
-    const wrap = document.createElement("div");
-    wrap.style.display = "flex";
-    wrap.style.justifyContent = "center";
-    wrap.style.gap = "12px";
-    wrap.style.alignItems = "center";
-    wrap.style.marginTop = "10px";
-
-    const status = document.createElement("div");
-    status.id = "loginStatus";
-    status.style.fontSize = "12px";
-    status.style.opacity = "0.95";
-    status.textContent = "ยังไม่ได้ล็อกอิน";
-
-    const btnOut = document.createElement("button");
-    btnOut.textContent = "ออกจากระบบ";
-    btnOut.className = "btn btn-ghost";
-    btnOut.type = "button";
-    btnOut.style.display = "none";
-    btnOut.onclick = ()=>{
-      currentUser = null;
-      localStorage.removeItem("id_token");
-      renderMerged(); // รีเรนเดอร์ให้ปุ่มลบ/แก้ไขหาย
-      updateLoginStatus();
-      alert("ออกจากระบบแล้ว");
-    };
-
-    const gDiv = document.createElement("div");
-    gDiv.id = "gSignIn";
-
-    wrap.appendChild(status);
-    wrap.appendChild(btnOut);
-    wrap.appendChild(gDiv);
-    header.appendChild(wrap);
-
-    window.__logoutBtn__ = btnOut;
-  }
-
-  function updateLoginStatus(){
-    const el = document.getElementById("loginStatus");
-    if(!el) return;
-    if(currentUser?.email){
-      el.textContent = "ล็อกอินแล้ว: " + currentUser.email;
-      if(window.__logoutBtn__) window.__logoutBtn__.style.display = "";
-    }else{
-      el.textContent = "ยังไม่ได้ล็อกอิน";
-      if(window.__logoutBtn__) window.__logoutBtn__.style.display = "none";
-    }
-  }
-
-  // ===== Load Listings =====
-  let allListings = [];
-  let approvedListings = [];
-
-  async function loadLocalListings(){
-    const res = await fetch("listings.json");
-    allListings = await res.json();
-  }
-
-  async function loadApprovedFromSheet(){
-    const res = await fetch(`${API_URL}?status=APPROVED`);
-    const data = await res.json();
-    if(!data.ok) throw new Error(data.error || "โหลดไม่สำเร็จ");
-    approvedListings = data.listings || [];
-  }
-
-  function mergedListings(){
-    // ตัด DELETED ออก
-    return [...approvedListings, ...allListings].filter(x => String(x.status||"").toUpperCase() !== "DELETED");
-  }
-
-  function renderMerged(){
-    const merged = mergedListings();
-    populateProvinceOptionsFrom(merged);
-    render(merged);
-  }
-
-  // ===== ส่งข้อมูลไป Apps Script แบบ form-urlencoded =====
-  async function submitToSheet(payload){
-    if(!currentUser?.id_token){
-      alert("ต้องล็อกอินด้วย Gmail ก่อน");
-      throw new Error("not logged in");
-    }
-
-    const body = new URLSearchParams({...payload, id_token: currentUser.id_token});
-    const res = await fetch(API_URL, { method:"POST", body });
-
-    const text = await res.text();
-    try{ return JSON.parse(text); }
-    catch(e){ return {ok:false, error:"API ไม่ได้ตอบ JSON: " + text.slice(0,200)}; }
-  }
-
-  // ===== Helpers =====
-  function populateProvinceOptionsFrom(list){
-    const sel = document.getElementById('provinceSelect');
-    if(!sel) return;
-    sel.innerHTML = `<option value="">ทุกจังหวัด</option>`;
-    const set = new Set(list.map(l => l.province).filter(Boolean));
-    [...set].sort().forEach(p=>{
-      const opt = document.createElement('option');
-      opt.value = p; opt.textContent = p;
-      sel.appendChild(opt);
-    });
-  }
-
-  function canManage(item){
-    return currentUser?.email && String(item.owner_email||"").trim() === currentUser.email;
-  }
-
-  // ===== Render (สำคัญ: แสดงปุ่มแก้ไข/ลบ เฉพาะเจ้าของ) =====
-  function render(list){
-    const container = document.getElementById("listings");
-    container.innerHTML = "";
-
-    if(!list.length){
-      container.innerHTML = `<i class="small">ไม่มีรายการ</i>`;
-      return;
-    }
-
-    list.forEach(item=>{
-      const card = document.createElement("div");
-      card.className = "card-item";
-
-      const priceText = item.price ? "฿" + Number(item.price).toLocaleString() : "-";
-      const sold = (item.sold_status || "ยังไม่ขาย").trim();
-
-      card.innerHTML = `
-        <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;">
-          <b>${item.title || "-"}</b>
-          <span class="contact-badge" style="background:${sold === "ขายแล้ว" ? "#64748b" : "#16a34a"}">${sold}</span>
-        </div>
-
-        <div class="meta">${item.province || "-"} • ${item.type || "-"} • ราคา: ${priceText}</div>
-
-        <div class="actions">
-          <span class="contact-badge">ติดต่อ: <b>${item.contact || "-"}</b></span>
-
-          ${canManage(item) ? `
-            <button class="btn btn-ghost btn-edit" type="button">แก้ไข</button>
-            <button class="btn btn-ghost btn-del" type="button">ลบ</button>
-            <select class="btn btn-ghost btn-sold" style="padding:10px;border:1px solid #e2e8f0">
-              <option value="ยังไม่ขาย" ${sold==="ยังไม่ขาย"?"selected":""}>ยังไม่ขาย</option>
-              <option value="ขายแล้ว" ${sold==="ขายแล้ว"?"selected":""}>ขายแล้ว</option>
-            </select>
-          ` : `
-            <span class="small">* ปุ่มแก้ไข/ลบจะเห็นเฉพาะเจ้าของโพสต์</span>
-          `}
-        </div>
-      `;
-
-      container.appendChild(card);
-
-      // ===== Events เฉพาะเจ้าของ =====
-      if(canManage(item)){
-        card.querySelector(".btn-edit").onclick = ()=>{
-          // เติมข้อมูลลงฟอร์ม แล้วตั้งโหมดแก้ไข
-          document.getElementById("fullName").value = item.full_name || "";
-          document.getElementById("contact").value = item.contact || "";
-          document.getElementById("province").value = item.province || "";
-          document.getElementById("type").value = item.type || "";
-          document.getElementById("title").value = item.title || "";
-          document.getElementById("price").value = item.price || "";
-          document.getElementById("lat").value = item.lat || "";
-          document.getElementById("lng").value = item.lng || "";
-          document.getElementById("detail").value = item.detail || "";
-          document.getElementById("sold_status").value = item.sold_status || "ยังไม่ขาย";
-          document.getElementById("editing_id").value = item.id || "";
-          document.getElementById("formMsg").textContent = "โหมดแก้ไข: กดส่งเพื่ออัปเดตโพสต์เดิม (จะรออนุมัติใหม่)";
-          window.scrollTo({top:0, behavior:"smooth"});
-        };
-
-        card.querySelector(".btn-del").onclick = async ()=>{
-          if(!confirm("ยืนยันลบโพสต์นี้?")) return;
-          const msg = document.getElementById("formMsg");
-          msg.textContent = "กำลังลบ...";
-
-          const r = await submitToSheet({mode:"delete", id:item.id});
-          if(r.ok){
-            msg.textContent = "ลบแล้ว ✅";
-            await loadApprovedFromSheet();
-            renderMerged();
-          }else{
-            msg.textContent = "ลบไม่สำเร็จ: " + (r.error||"");
-            alert("ลบไม่สำเร็จ: " + (r.error||""));
-          }
-        };
-
-        card.querySelector(".btn-sold").onchange = async (ev)=>{
-          const sold_status = ev.target.value;
-          const r = await submitToSheet({mode:"sold", id:item.id, sold_status});
-          if(!r.ok) alert("อัปเดตสถานะไม่สำเร็จ: " + (r.error||""));
-          await loadApprovedFromSheet();
-          renderMerged();
-        };
+      if(r.ok){
+        msg.textContent = id ? "อัปเดตแล้ว ✅ (รออนุมัติใหม่)" : "ส่งประกาศแล้ว ✅ (รออนุมัติ)";
+        e.target.reset();
+        document.getElementById("editing_id").value = "";
+        setImages([]);
+        fillProvinces();
+        await loadApprovedFromSheet();
+        renderMerged();
+      }else{
+        msg.textContent = "ส่งไม่สำเร็จ: " + (r.error || "ไม่ทราบสาเหตุ");
       }
-    });
-  }
-
-  // ===== Form submit: create/update (อัปเดตโพสต์เดิม) =====
-  document.addEventListener("DOMContentLoaded", ()=>{
-    // เพิ่ม hidden field สำหรับโหมดแก้ไข
-    const form = document.getElementById("sellForm");
-    const hidden = document.createElement("input");
-    hidden.type = "hidden";
-    hidden.id = "editing_id";
-    hidden.value = "";
-    form.appendChild(hidden);
-
-    // เพิ่ม dropdown sold_status ในฟอร์ม (ถ้ายังไม่มี)
-    if(!document.getElementById("sold_status")){
-      const wrap = document.createElement("div");
-      wrap.innerHTML = `
-        <label>สถานะทรัพย์</label>
-        <select id="sold_status" required>
-          <option value="ยังไม่ขาย">ยังไม่ขาย</option>
-          <option value="ขายแล้ว">ขายแล้ว</option>
-        </select>
-      `;
-      form.insertBefore(wrap, form.querySelector(".consent"));
+    }catch(err){
+      msg.textContent = "ส่งไม่สำเร็จ: " + err.message;
     }
-
-    form.addEventListener("submit", async (e)=>{
-      e.preventDefault();
-      const msg = document.getElementById("formMsg");
-      msg.textContent = "กำลังส่ง...";
-
-      const id = document.getElementById("editing_id").value.trim();
-
-      const payload = {
-        full_name: document.getElementById("fullName").value.trim(),
-        contact: document.getElementById("contact").value.trim(),
-        province: document.getElementById("province").value,
-        type: document.getElementById("type").value,
-        title: document.getElementById("title").value.trim(),
-        price: document.getElementById("price").value,
-        lat: document.getElementById("lat").value.trim(),
-        lng: document.getElementById("lng").value.trim(),
-        detail: document.getElementById("detail").value.trim(),
-        images: document.getElementById("images") ? document.getElementById("images").value : "[]",
-        sold_status: document.getElementById("sold_status").value
-      };
-
-      try{
-        let r;
-        if(id){
-          r = await submitToSheet({mode:"update", id, ...payload});
-        }else{
-          r = await submitToSheet({mode:"create", ...payload});
-        }
-
-        if(r.ok){
-          msg.textContent = id ? "อัปเดตแล้ว ✅ (รออนุมัติใหม่)" : "ส่งประกาศแล้ว ✅ (รออนุมัติ)";
-          e.target.reset();
-          document.getElementById("editing_id").value = "";
-          await loadApprovedFromSheet();
-          renderMerged();
-        }else{
-          msg.textContent = "ส่งไม่สำเร็จ: " + (r.error||"");
-        }
-      }catch(err){
-        msg.textContent = "ส่งไม่สำเร็จ: " + err.message;
-      }
-    });
   });
 
-  // ===== Init Google Sign-In =====
-  window.onload = async ()=>{
-    mountLoginUI();
+  function decodeEmailFromIdToken(idToken){
+    try{
+      const parts = idToken.split(".");
+      const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+      return payload.email || "";
+    }catch(e){
+      return "";
+    }
+  }
 
-    // render button
+  function initGoogleLogin(){
     google.accounts.id.initialize({
       client_id: GOOGLE_CLIENT_ID,
       callback: (resp)=>{
-        // resp.credential = id_token
         const id_token = resp.credential;
         localStorage.setItem("id_token", id_token);
-
-        // ดึง email จริงจาก token (decode แบบง่าย)
-        const parts = id_token.split(".");
-        const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
-        currentUser = { email: payload.email, id_token };
+        const email = decodeEmailFromIdToken(id_token);
+        currentUser = { email, id_token };
         updateLoginStatus();
         renderMerged();
       }
@@ -857,25 +764,33 @@
       { theme:"outline", size:"large", text:"signin_with" }
     );
 
-    // โหลด token เก่าถ้ามี
     const cached = localStorage.getItem("id_token");
     if(cached){
-      try{
-        const parts = cached.split(".");
-        const payload = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
-        currentUser = { email: payload.email, id_token: cached };
-      }catch(e){}
+      const email = decodeEmailFromIdToken(cached);
+      if(email) currentUser = { email, id_token: cached };
     }
     updateLoginStatus();
+  }
 
-    // โหลดข้อมูล
+  (async function init(){
+    fillProvinces();
+    setImages([]);
+    initMap();
+
     await loadLocalListings();
-    await loadApprovedFromSheet();
-    renderMerged();
-  };
-</script>
+    try{ await loadApprovedFromSheet(); }catch(e){ approvedListings = []; }
 
+    renderMerged();
+  })();
+
+  window.addEventListener("load", ()=>{
+    const timer = setInterval(()=>{
+      if(window.google?.accounts?.id){
+        clearInterval(timer);
+        initGoogleLogin();
+      }
+    }, 200);
+  });
+</script>
 </body>
 </html>
-
-
