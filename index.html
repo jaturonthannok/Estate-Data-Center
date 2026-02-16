@@ -503,7 +503,15 @@
       throw new Error("not logged in");
     }
     const body = new URLSearchParams({...payload, id_token: currentUser.id_token});
-    const res = await fetch(API_URL, { method:"POST", body });
+    const res = await fetch(API_URL, {
+  method: "POST",
+  mode: "cors",
+  credentials: "omit",
+  redirect: "follow",
+  cache: "no-store",
+  body
+});
+
     const text = await res.text();
     try{ return JSON.parse(text); }
     catch(e){ return {ok:false, error:"API ไม่ได้ตอบ JSON: " + text.slice(0,200)}; }
@@ -794,5 +802,6 @@
 </script>
 </body>
 </html>
+
 
 
