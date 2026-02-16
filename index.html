@@ -481,12 +481,15 @@
     }catch(e){ allListings = []; }
   }
 
-  async function loadApprovedFromSheet(){
-    const res = await fetch(`${API_URL}?status=APPROVED`);
-    const data = await res.json();
-    if(!data.ok) throw new Error(data.error || "โหลดข้อมูลไม่สำเร็จ");
-    approvedListings = (data.listings || []).filter(x => String(x.status||"").toUpperCase() !== "DELETED");
-  }
+ async function loadApprovedFromSheet(){
+  const res = await fetch(`${API_URL}?status=APPROVED`);
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "โหลดข้อมูลไม่สำเร็จ");
+
+  // ✅ กรองทิ้งรายการที่ลบ/ซ่อน
+  return (data.listings || []).filter(x => String(x.status || "").toUpperCase() !== "DELETED");
+}
+
 
   function mergedListings(){
     return [...approvedListings, ...allListings].filter(x => String(x.status||"").toUpperCase() !== "DELETED");
@@ -549,6 +552,8 @@
 
 
   function render(list){
+    list = (list || []).filter(x => String(x.status || "").toUpperCase() !== "DELETED");
+
     markers.clearLayers();
     const container = document.getElementById("listings");
     container.innerHTML = "";
@@ -646,19 +651,21 @@
 
           try{
             const r = await submitToSheet({mode:"delete", id:item.id});
-            if(r.ok){
-              msg.textContent = "ลบแล้ว ✅";
-              await loadApprovedFromSheet();
-              renderMerged();
-            }else{
-              msg.textContent = "ลบไม่สำเร็จ: " + (r.error||"");
-              alert("ลบไม่สำเร็จ: " + (r.error||""));
-            }
-          }catch(err){
-            msg.textContent = "ลบไม่สำเร็จ: " + err.message;
-            alert("ลบไม่สำเร็จ: " + err.message);
-          }
-        });
+            if (r.ok) {
+  // 1) เอารายการนี้ออกจากรายการที่โหลดจากชีต (เพื่อให้หายทันทีบนหน้าเว็บ)
+  approvedListings = approvedListings.filter(x => String(x.id) !== String(item.id));
+
+  // 2) รวมรายการใหม่ แล้ว render ใหม่
+  const merged = [...approvedListings, ...allListings];
+  populateProvinceOptionsFrom(merged);
+  render(merged);
+
+  // 3) แจ้งข้อความ
+  const msg = document.getElementById("formMsg");
+  if (msg) msg.textContent = "ลบแล้ว ✅";
+  return;
+}
+
 
         card.querySelector(".btn-sold").addEventListener("change", async (ev)=>{
           try{
@@ -833,6 +840,7 @@
 </script>
 </body>
 </html>
+
 
 
 
